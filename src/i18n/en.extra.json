@@ -77,5 +77,6 @@
  "Код для телефона": "Code for phone",
  "Код скопирован": "Code copied",
  "На iPhone открой Штаб → Настройки → Синхронизация и вставь код в первое поле.": "On your iPhone open HQ → Settings → Sync and paste the code into the first field.",
- "Не получилось скопировать — разреши доступ к буферу обмена.": "Couldn't copy — allow clipboard access."
+ "Не получилось скопировать — разреши доступ к буферу обмена.": "Couldn't copy — allow clipboard access.",
+ "Выдели код и скопируй: Cmd+C.": "Select the code and copy it: Cmd+C."
 }

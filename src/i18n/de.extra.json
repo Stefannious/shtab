@@ -78,5 +78,6 @@
  "Код для телефона": "Code fürs Handy",
  "Код скопирован": "Code kopiert",
  "На iPhone открой Штаб → Настройки → Синхронизация и вставь код в первое поле.": "Öffne auf dem iPhone Zentrale → Einstellungen → Synchronisierung und füge den Code ins erste Feld ein.",
- "Не получилось скопировать — разреши доступ к буферу обмена.": "Kopieren fehlgeschlagen – erlaube den Zugriff auf die Zwischenablage."
+ "Не получилось скопировать — разреши доступ к буферу обмена.": "Kopieren fehlgeschlagen – erlaube den Zugriff auf die Zwischenablage.",
+ "Выдели код и скопируй: Cmd+C.": "Markiere den Code und kopiere ihn: Cmd+C."
 }

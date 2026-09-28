@@ -77,5 +77,6 @@
  "Код для телефона": "Código para el móvil",
  "Код скопирован": "Código copiado",
  "На iPhone открой Штаб → Настройки → Синхронизация и вставь код в первое поле.": "En el iPhone abre Cuartel → Ajustes → Sincronización y pega el código en el primer campo.",
- "Не получилось скопировать — разреши доступ к буферу обмена.": "No se pudo copiar: permite el acceso al portapapeles."
+ "Не получилось скопировать — разреши доступ к буферу обмена.": "No se pudo copiar: permite el acceso al portapapeles.",
+ "Выдели код и скопируй: Cmd+C.": "Selecciona el código y cópialo: Cmd+C."
 }

@@ -1913,7 +1913,10 @@ Object.assign(A, {
   async 'gh-sync'(){ try{ if(SY.queue.length) await syFlush(); await syPull(); toast(_L('Синхронизировано')); }catch(e){ toast(esc(syStateText()||e.message),'bad'); } syStatus(); },
   'gh-off'(el){ if(!armed(el)) return; try{ localStorage.removeItem(GH_KEY); }catch(e){} KV.set('sync', null).then(()=>location.reload()); },
   'gh-pair-copy'(){ const code=pairEncode(); const done=()=>toast(`<b>${_L('Код скопирован')}</b>${_L('На iPhone открой Штаб → Настройки → Синхронизация и вставь код в первое поле.')}`,'big');
-    try{ navigator.clipboard.writeText(code).then(done, ()=>{ toast(_L('Не получилось скопировать — разреши доступ к буферу обмена.'),'bad'); }); }catch(e){ toast(_L('Не получилось скопировать — разреши доступ к буферу обмена.'),'bad'); } },
+    const legacy=()=>{ const ta=document.createElement('textarea'); ta.value=code; ta.setAttribute('readonly',''); ta.style.cssText='position:fixed;left:-9999px;top:0'; document.body.appendChild(ta); ta.select(); let ok=false; try{ ok=document.execCommand('copy'); }catch(e){} ta.remove(); return ok; };
+    const show=()=>{ let f=$('#pair-code'); if(!f){ const box=$('#modal [data-a="gh-pair-copy"]'); if(!box) return; f=document.createElement('input'); f.id='pair-code'; f.className='inp'; f.readOnly=true; f.setAttribute('data-notr','1'); box.closest('.btns').after(f); } f.value=code; f.focus(); f.select(); toast(_L('Выдели код и скопируй: Cmd+C.')); };
+    if(legacy()){ done(); return; }
+    try{ navigator.clipboard.writeText(code).then(done, show); }catch(e){ show(); } },
   'push-on'(){ pushEnable(); },
   'push-off'(){ pushDisable(); }
 });

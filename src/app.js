@@ -1766,7 +1766,12 @@ async function syTick(){ if(!SY.cfg || document.visibilityState==='hidden' || !n
 function syTokenBad(){ if(S.tokenWarned) return; S.tokenWarned=true; toast(_L('Токен GitHub не работает — обнови его в настройках.'),'bad'); }
 function syStatus(){ const n=$('#sync'), m=$('#sync2'); const cls = !SY.cfg ? 'local' : SY.err ? 'err' : SY.queue.length ? 'pending' : 'live'; [n,m].forEach(x=>{ if(x) x.className='sync '+cls; }); const l=$('#sync-lbl'); if(l && SY.cfg) l.textContent = SY.err ? _L('нет связи') : SY.queue.length ? _L('сохраняю…') : _L('синхронизация'); if(S.modal && S.modal.type==='settings'){ const st=$('#sy-state'); if(st) st.textContent=syStateText(); } }
 function syStateText(){ if(!SY.cfg) return ''; if(SY.err) return SY.err.code==='bad_token' ? _L('Токен не подходит или истёк') : SY.err.code==='network' ? _L('Нет интернета — изменения сохранятся позже') : _L('Ошибка: {0}', SY.err.message); const t=SY.last ? new Date(SY.last).toTimeString().slice(0,5) : '—'; return SY.queue.length ? _L('Сохраняю изменения: {0}', SY.queue.length) : _L('Всё сохранено · {0}', t); }
+function pairDecode(v){ const m=String(v||'').match(/shtab1:([A-Za-z0-9_-]+)/); if(!m) return null; try{ let b=m[1].replace(/-/g,'+').replace(/_/g,'/'); while(b.length%4) b+='='; const o=JSON.parse(b64utf8(b)); return o && o.t && o.r ? o : null; }catch(e){ return null; } }
+function pairEncode(){ return 'shtab1:'+utf8b64(JSON.stringify({r:SY.cfg.repo, t:SY.cfg.token, k:aiKey()})).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
 async function pwaConnect(){
+  const hp=(location.hash||'').match(/pair=(shtab1:[A-Za-z0-9_-]+)/);
+  if(hp){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} const o=pairDecode(hp[1]);
+    if(o){ startLocal(); if(o.k) lsSet(AIK_KEY, o.k); try{ await syConnect(o.t, o.r); }catch(e){ toast(esc((e&&e.message)||_L('Не получилось подключиться')),'bad'); return; } location.reload(); return; } }
   const cfg=ghCfg(); if(!cfg){ startLocal(); return; }
   SY.cfg=cfg; SY.branch=cfg.branch||'main'; await syLoad();
   COLS.forEach(c=>{ S.cols[c]=new Map(); }); S.ready=new Set(); baseline=null; db=ghDb; S.mode='live';
@@ -1878,11 +1883,11 @@ async function importFile(file){ let o=null; try{ o=JSON.parse(await file.text()
 function appSettingsHtml(){ const k=aiKey(), pp=pushPrefs();
   const sync = !SY.cfg
     ? `<small>${_L('Подключи свой приватный репозиторий на GitHub — телефон и ноутбук будут видеть одно и то же, а GitHub сможет присылать напоминания.')}</small>
-       <input class="inp" id="gh-token" type="password" autocomplete="off" placeholder="github_pat_…" data-notr="1" aria-label="${_L('Токен GitHub')}">
+       <input class="inp" id="gh-token" type="password" autocomplete="off" placeholder="${_L('Код подключения или github_pat_…')}" data-notr="1" aria-label="${_L('Токен GitHub')}">
        <input class="inp" id="gh-repo" autocomplete="off" value="${esc(ghDefaultRepo())}" placeholder="login/shtab-data" data-notr="1" aria-label="${_L('Репозиторий с данными')}">
        <div class="btns"><button class="btn sm pri" type="button" data-a="gh-connect">${_L('Подключить')}</button><button class="btn sm ghost" type="button" data-a="gh-help">${_L('Где взять токен')}</button></div>`
     : `<small><span data-notr="1">${esc(SY.cfg.repo)}</span> · <span id="sy-state">${esc(syStateText())}</span></small>
-       <div class="btns"><button class="btn sm" type="button" data-a="gh-sync">${ico('check','sm')}${_L('Синхронизировать')}</button><button class="btn sm ghost" type="button" data-a="gh-off" data-confirm="${_L('Отключить синхронизацию на этом устройстве?')}">${_L('Отключить')}</button></div>`;
+       <div class="btns"><button class="btn sm pri" type="button" data-a="gh-pair-copy">${ico('copy','sm')}${_L('Код для телефона')}</button><button class="btn sm" type="button" data-a="gh-sync">${ico('check','sm')}${_L('Синхронизировать')}</button><button class="btn sm ghost" type="button" data-a="gh-off" data-confirm="${_L('Отключить синхронизацию на этом устройстве?')}">${_L('Отключить')}</button></div>`;
   const push = `<div class="fld"><span>${_L('Напоминания')}</span><small id="push-state">${_L('Проверяю…')}</small>
     <div class="g3"><label class="fld"><span>${_L('Утро')}</span><input class="inp" id="pp-m" type="time" value="${esc(pp.morning||'')}"></label><label class="fld"><span>${_L('Вечер')}</span><input class="inp" id="pp-e" type="time" value="${esc(pp.evening||'')}"></label><label class="switch" style="align-self:end"><span>${_L('Таблетки')}</span><input type="checkbox" id="pp-meds" ${pp.meds?'checked':''}></label></div>
     <div class="btns" id="push-btns"></div></div>`;
@@ -1902,11 +1907,13 @@ MODALS.ghhelp = function(){ const owner=(ghDefaultRepo().split('/')[0])||'login'
   <div class="btns"><a class="btn sm" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">${_L('Открыть GitHub')}</a><button class="btn sm pri" type="button" data-a="settings">${_L('Назад в настройки')}</button></div>`; };
 Object.assign(A, {
   'gh-help'(){ openModal('ghhelp'); },
-  async 'gh-connect'(el){ const t=($('#gh-token')||{}).value, r=($('#gh-repo')||{}).value; el.disabled=true; const old=el.innerHTML; el.textContent=_L('Подключаю…');
+  async 'gh-connect'(el){ let t=($('#gh-token')||{}).value, r=($('#gh-repo')||{}).value; const pc=pairDecode(t); if(pc){ t=pc.t; r=pc.r; if(pc.k) lsSet(AIK_KEY, pc.k); } el.disabled=true; const old=el.innerHTML; el.textContent=_L('Подключаю…');
     try{ const res=await syConnect(t, r); toast(res.hasData ? `<b>${_L('Синхронизация включена')}</b>${_L('Загружаю данные из репозитория…')}` : `<b>${_L('Синхронизация включена')}</b>${_L('Данные этого устройства сохранены в репозиторий: {0}', res.uploaded)}`,'big'); setTimeout(()=>location.reload(), 900); }
     catch(e){ toast(esc((e&&e.message)||_L('Не получилось подключиться')),'bad'); el.disabled=false; el.innerHTML=old; } },
   async 'gh-sync'(){ try{ if(SY.queue.length) await syFlush(); await syPull(); toast(_L('Синхронизировано')); }catch(e){ toast(esc(syStateText()||e.message),'bad'); } syStatus(); },
   'gh-off'(el){ if(!armed(el)) return; try{ localStorage.removeItem(GH_KEY); }catch(e){} KV.set('sync', null).then(()=>location.reload()); },
+  'gh-pair-copy'(){ const code=pairEncode(); const done=()=>toast(`<b>${_L('Код скопирован')}</b>${_L('На iPhone открой Штаб → Настройки → Синхронизация и вставь код в первое поле.')}`,'big');
+    try{ navigator.clipboard.writeText(code).then(done, ()=>{ toast(_L('Не получилось скопировать — разреши доступ к буферу обмена.'),'bad'); }); }catch(e){ toast(_L('Не получилось скопировать — разреши доступ к буферу обмена.'),'bad'); } },
   'push-on'(){ pushEnable(); },
   'push-off'(){ pushDisable(); }
 });

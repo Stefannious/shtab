@@ -72,5 +72,10 @@
  "Ключ начинается с sk-ant-": "The key starts with sk-ant-",
  "Ключ сохранён": "Key saved",
  "Ключ работает": "The key works",
- "Не получилось": "Didn't work"
+ "Не получилось": "Didn't work",
+ "Код подключения или github_pat_…": "Pairing code or github_pat_…",
+ "Код для телефона": "Code for phone",
+ "Код скопирован": "Code copied",
+ "На iPhone открой Штаб → Настройки → Синхронизация и вставь код в первое поле.": "On your iPhone open HQ → Settings → Sync and paste the code into the first field.",
+ "Не получилось скопировать — разреши доступ к буферу обмена.": "Couldn't copy — allow clipboard access."
 }

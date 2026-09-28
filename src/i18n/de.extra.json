@@ -73,5 +73,10 @@
  "Ключ начинается с sk-ant-": "Der Schlüssel beginnt mit sk-ant-",
  "Ключ сохранён": "Schlüssel gespeichert",
  "Ключ работает": "Schlüssel funktioniert",
- "Не получилось": "Hat nicht geklappt"
+ "Не получилось": "Hat nicht geklappt",
+ "Код подключения или github_pat_…": "Kopplungscode oder github_pat_…",
+ "Код для телефона": "Code fürs Handy",
+ "Код скопирован": "Code kopiert",
+ "На iPhone открой Штаб → Настройки → Синхронизация и вставь код в первое поле.": "Öffne auf dem iPhone Zentrale → Einstellungen → Synchronisierung und füge den Code ins erste Feld ein.",
+ "Не получилось скопировать — разреши доступ к буферу обмена.": "Kopieren fehlgeschlagen – erlaube den Zugriff auf die Zwischenablage."
 }

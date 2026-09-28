@@ -1,5 +1,5 @@
 /* Штаб — service worker: works offline, updates itself when online */
-const V = 'shtab-4ebf40100e';
+const V = 'shtab-5ffdbc1b9c';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/favicon-32.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('shtab-') && k !== V && k !== V + '-rt').map(k => caches.delete(k)))).then(() => self.clients.claim())); });

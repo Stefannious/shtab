@@ -1065,6 +1065,9 @@ pre.code{margin:0 0 12px; padding:12px 14px; border-radius:14px; background:var(
 #gh-token,#gh-repo,#ai-key{font:500 13.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
 .fld > .inp + .inp{margin-top:8px}
 label.btn{cursor:pointer; display:inline-flex; align-items:center; justify-content:center}
+/* v13: Safari doesn't clip animated children to a rounded parent — clip each layer itself */
+.orb::after{inset:0; border-radius:50%}
+.liq{clip-path:circle(50% at 50% 50%); -webkit-clip-path:circle(50% at 50% 50%)}
 </style>
 
 <div class="minibar" id="minibar" aria-hidden="true"></div>

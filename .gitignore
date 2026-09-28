@@ -1,0 +1,4 @@
+ios/build/
+ios/Payload/
+*.ipa
+xcuserdata/

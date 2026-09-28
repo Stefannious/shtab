@@ -78,5 +78,14 @@
  "Код скопирован": "Código copiado",
  "На iPhone открой Штаб → Настройки → Синхронизация и вставь код в первое поле.": "En el iPhone abre Cuartel → Ajustes → Sincronización y pega el código en el primer campo.",
  "Не получилось скопировать — разреши доступ к буферу обмена.": "No se pudo copiar: permite el acceso al portapapeles.",
- "Выдели код и скопируй: Cmd+C.": "Selecciona el código y cópialo: Cmd+C."
+ "Выдели код и скопируй: Cmd+C.": "Selecciona el código y cópialo: Cmd+C.",
+ "Сегодня: {0}.": "Hoy: {0}.",
+ "Зал: {0}.": "Gimnasio: {0}.",
+ "Утром: {0}.": "Por la mañana: {0}.",
+ "На сегодня плана нет — добавь главное.": "Aún no hay plan para hoy: añade lo principal.",
+ "Закрой день": "Cierra el día",
+ "Сделано {0} из {1}. Отметь настроение и сон — 20 секунд.": "Hecho {0} de {1}. Anota ánimo y sueño: 20 segundos.",
+ "Отметь настроение и сон — 20 секунд.": "Anota ánimo y sueño: 20 segundos.",
+ "Включены на этом iPhone. Приходят точно по времени, даже без интернета.": "Activadas en este iPhone. Llegan a la hora exacta, incluso sin internet.",
+ "Открыть настройки": "Abrir Ajustes"
 }

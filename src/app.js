@@ -162,6 +162,11 @@ const S = { mode:'loading', cols:{}, ready:new Set(), tab:'home', lastTab:null, 
   chat:[], thinking:false, ctl:null, aiOff:null, draft:null, closedWo:new Set(), techOpen:new Set(), foodDate:todayStr(), woT:null, exSel:null, modal:null };
 COLS.forEach(c => S.cols[c] = new Map());
 const P = () => ({...DEF_PROFILE, ...(S.cols.meta.get('profile')||{})});
+/* ================= native iOS app: bridge to the WKWebView shell ================= */
+const NB = (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.shtab) || null;
+const NATIVE = !!NB;
+if(NATIVE) document.documentElement.classList.add('native');
+function nat(cmd, args){ if(!NB) return Promise.resolve(null); try{ return Promise.resolve(NB.postMessage({...(args||{}), cmd})).catch(e=>{ console.warn('native', cmd, e); return null; }); }catch(e){ return Promise.resolve(null); } }
 const PALS = [
   {id:'porcelain', n:'Фарфор', sw:['#FFFFFF','#EFE2CE','#C4A177'], dot:'#1F1A15', dotD:'#C9A36A'},
   {id:'sage', n:'Шалфей', sw:['#FFFFFF','#DEE8D4','#95AE85'], dot:'#22382B', dotD:'#9DB889'},
@@ -175,6 +180,7 @@ function applyTheme(theme, pal){ const root=document.documentElement; theme=['li
   if(root.dataset.mode!==mode) root.dataset.mode=mode; if(root.dataset.pal!==pal) root.dataset.pal=pal; if(root.dataset.accent) delete root.dataset.accent;
   const mc=document.querySelector('meta[name="color-scheme"]'); if(mc) mc.content=mode;
   const tc=document.querySelector('meta[name="theme-color"]'); if(tc){ const bg=getComputedStyle(root).getPropertyValue('--bg').trim(); if(bg && tc.content!==bg) tc.content=bg; }
+  if(NATIVE){ const bg=getComputedStyle(root).getPropertyValue('--bg').trim(), k=mode+bg; if(applyTheme.nk!==k){ applyTheme.nk=k; nat('theme',{bg, dark}); } }
   if(!S.previewTheme && !S.previewPal) uiSave({theme, pal}); }
 function themeFade(){ if(REDUCE()) return; const r=document.documentElement; r.classList.add('theme-fade'); clearTimeout(themeFade.t); themeFade.t=setTimeout(()=>r.classList.remove('theme-fade'), 450); }
 const UI_KEY='shtab-ui';
@@ -317,7 +323,7 @@ function derive(){
 
 /* ================= render core ================= */
 let rafP=false, dirty=false;
-function changed(){ derive(); schedule(); }
+function changed(){ derive(); schedule(); if(NATIVE) natSchedSoon(); }
 function schedule(){ if(rafP) return; rafP=true; requestAnimationFrame(()=>{ rafP=false; render(false); }); }
 function editingEl(){ const a=document.activeElement, v=$('#view'); return (a && v && v.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) ? a : null; }
 function render(force){
@@ -869,8 +875,8 @@ let actx=null;
 function ensureAudio(){ try{ if(!actx){ const C=window.AudioContext||window.webkitAudioContext; if(C) actx=new C(); } if(actx && actx.state==='suspended') actx.resume(); }catch(e){} }
 function beep(){ if(!actx) return; try{ [0,.22].forEach(d=>{ const o=actx.createOscillator(), g=actx.createGain(); o.frequency.value=880; o.type='sine'; g.gain.setValueAtTime(.0001, actx.currentTime+d); g.gain.exponentialRampToValueAtTime(.25, actx.currentTime+d+.02); g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime+d+.16); o.connect(g).connect(actx.destination); o.start(actx.currentTime+d); o.stop(actx.currentTime+d+.18); }); }catch(e){} }
 let wakeLock=null;
-async function wake(){ try{ if('wakeLock' in navigator) wakeLock=await navigator.wakeLock.request('screen'); }catch(e){ wakeLock=null; } }
-function releaseWake(){ try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null; }
+async function wake(){ if(NATIVE){ wakeLock=true; nat('awake',{on:true}); return; } try{ if('wakeLock' in navigator) wakeLock=await navigator.wakeLock.request('screen'); }catch(e){ wakeLock=null; } }
+function releaseWake(){ if(NATIVE){ wakeLock=null; nat('awake',{on:false}); return; } try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null; }
 
 /* ================= assistant ================= */
 let sample=null, sTools=false;
@@ -1568,7 +1574,7 @@ function gatedProgress(){ const n=activeDays();
 
 /* ================= v10: phone-native layer ================= */
 let hapL=null;
-function buzz(ms){ try{ if(navigator.vibrate && matchMedia('(pointer:coarse)').matches){ navigator.vibrate(ms||8); return; }
+function buzz(ms){ if(NATIVE){ nat('haptic',{style: ms>=30?'success' : ms>=18?'medium' : (ms && ms<=6)?'select' : 'light'}); return; } try{ if(navigator.vibrate && matchMedia('(pointer:coarse)').matches){ navigator.vibrate(ms||8); return; }
   if(!hapL){ hapL=document.createElement('label'); hapL.setAttribute('aria-hidden','true'); hapL.style.cssText='position:fixed;left:-200px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none'; const i=document.createElement('input'); i.type='checkbox'; i.setAttribute('switch',''); i.tabIndex=-1; hapL.appendChild(i); document.body.appendChild(hapL); }
   hapL.click(); }catch(e){} }
 function burst(el){ if(REDUCE()) return; const r0=el && el.getBoundingClientRect(); const r = r0 && r0.width>0 && r0.bottom>0 && r0.top<innerHeight ? r0 : {left:innerWidth/2-80, top:innerHeight/2-80, width:160, height:160};
@@ -1768,7 +1774,10 @@ function syStatus(){ const n=$('#sync'), m=$('#sync2'); const cls = !SY.cfg ? 'l
 function syStateText(){ if(!SY.cfg) return ''; if(SY.err) return SY.err.code==='bad_token' ? _L('Токен не подходит или истёк') : SY.err.code==='network' ? _L('Нет интернета — изменения сохранятся позже') : _L('Ошибка: {0}', SY.err.message); const t=SY.last ? new Date(SY.last).toTimeString().slice(0,5) : '—'; return SY.queue.length ? _L('Сохраняю изменения: {0}', SY.queue.length) : _L('Всё сохранено · {0}', t); }
 function pairDecode(v){ const m=String(v||'').match(/shtab1:([A-Za-z0-9_-]+)/); if(!m) return null; try{ let b=m[1].replace(/-/g,'+').replace(/_/g,'/'); while(b.length%4) b+='='; const o=JSON.parse(b64utf8(b)); return o && o.t && o.r ? o : null; }catch(e){ return null; } }
 function pairEncode(){ return 'shtab1:'+utf8b64(JSON.stringify({r:SY.cfg.repo, t:SY.cfg.token, k:aiKey()})).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+/* native app: keep the sync token and NOVA key in the iPhone Keychain too, so they survive WebKit clearing site data */
+async function natRestore(){ if(!NATIVE) return; for(const k of [GH_KEY, AIK_KEY]){ const loc=lsGet(k); if(loc){ nat('store.set',{key:k, value:loc}); continue; } const v=await nat('store.get',{key:k}); if(typeof v==='string' && v) lsSet(k, v); } }
 async function pwaConnect(){
+  await natRestore();
   const hp=(location.hash||'').match(/pair=(shtab1:[A-Za-z0-9_-]+)/);
   if(hp){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} const o=pairDecode(hp[1]);
     if(o){ startLocal(); if(o.k) lsSet(AIK_KEY, o.k); try{ await syConnect(o.t, o.r); }catch(e){ toast(esc((e&&e.message)||_L('Не получилось подключиться')),'bad'); return; } location.reload(); return; } }
@@ -1813,8 +1822,9 @@ function b64u(bytes){ let s=''; const u=new Uint8Array(bytes); for(let i=0;i<u.l
 function unb64u(s){ s=String(s).replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; const b=atob(s), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
 async function genVapid(){ const kp=await crypto.subtle.generateKey({name:'ECDSA', namedCurve:'P-256'}, true, ['sign','verify']); const jwk=await crypto.subtle.exportKey('jwk', kp.privateKey); const raw=await crypto.subtle.exportKey('raw', kp.publicKey);
   return {publicKey:b64u(raw), jwk:{kty:'EC', crv:'P-256', d:jwk.d, x:jwk.x, y:jwk.y}, subject:location.origin.startsWith('http')?location.origin:'mailto:shtab@users.noreply.github.com', created:new Date().toISOString()}; }
-async function pushState(){ if(!pushSupported()) return 'unsupported'; if(Notification.permission==='denied') return 'denied'; try{ const reg=await navigator.serviceWorker.getRegistration(); const sub=reg && await reg.pushManager.getSubscription(); return sub ? 'on' : 'off'; }catch(e){ return 'off'; } }
+async function pushState(){ if(NATIVE) return natNotifState(); if(!pushSupported()) return 'unsupported'; if(Notification.permission==='denied') return 'denied'; try{ const reg=await navigator.serviceWorker.getRegistration(); const sub=reg && await reg.pushManager.getSubscription(); return sub ? 'on' : 'off'; }catch(e){ return 'off'; } }
 async function pushEnable(){
+  if(NATIVE) return natEnable();
   if(!SY.cfg){ toast(_L('Сначала подключи синхронизацию с GitHub — через неё приходят напоминания.'),'bad'); return; }
   if(isIOS() && !isStandalone()){ toast(_L('На iPhone уведомления работают, когда Штаб открыт с экрана «Домой».'),'bad'); return; }
   if(!pushSupported()){ toast(_L('Этот браузер не поддерживает уведомления.'),'bad'); return; }
@@ -1833,7 +1843,32 @@ async function pushEnable(){
     try{ await reg.showNotification(_L('Штаб'), {body:_L('Уведомления включены. Первое напоминание придёт по расписанию.'), icon:'icons/icon-192.png', tag:'shtab-test'}); }catch(e){}
     toast(_L('Уведомления включены')); if(S.modal && S.modal.type==='settings') renderModal(true);
   }catch(e){ console.warn(e); toast(_L('Не получилось включить уведомления: {0}', esc((e&&e.message)||'')),'bad'); } }
-async function pushDisable(){ try{ const reg=await navigator.serviceWorker.getRegistration(); const sub=reg && await reg.pushManager.getSubscription(); if(sub){ const id=(await gitSha(sub.endpoint)).slice(0,16); await sub.unsubscribe(); if(SY.cfg) await syCommit(()=>{ const subs={...(SY.extra['push/subs.json']||{})}; delete subs[id]; return {'push/subs.json':JSON.stringify(subs,null,1)}; }, 'push unsubscribe'); } }catch(e){ console.warn(e); } toast(_L('Уведомления на этом устройстве выключены')); if(S.modal) renderModal(true); }
+async function pushDisable(){ if(NATIVE) return natDisable(); try{ const reg=await navigator.serviceWorker.getRegistration(); const sub=reg && await reg.pushManager.getSubscription(); if(sub){ const id=(await gitSha(sub.endpoint)).slice(0,16); await sub.unsubscribe(); if(SY.cfg) await syCommit(()=>{ const subs={...(SY.extra['push/subs.json']||{})}; delete subs[id]; return {'push/subs.json':JSON.stringify(subs,null,1)}; }, 'push unsubscribe'); } }catch(e){ console.warn(e); } toast(_L('Уведомления на этом устройстве выключены')); if(S.modal) renderModal(true); }
+/* native app: reminders are local notifications, scheduled on the phone itself (exact time, work offline) */
+const NOTIF_OFF='shtab-notif-off';
+async function natNotifState(){ const s=await nat('notif.status'); if(s==='denied') return 'denied'; if(lsGet(NOTIF_OFF)==='1') return 'off'; return s==='granted' ? 'on' : 'off'; }
+async function natEnable(){ const s=await nat('notif.request'); if(s!=='granted'){ toast(_L('Уведомления запрещены — разреши их в настройках телефона.'),'bad'); refreshPushUi(); return; }
+  try{ localStorage.removeItem(NOTIF_OFF); }catch(e){} natSched.sig=null; await natSched(); toast(_L('Уведомления включены')); if(S.modal && S.modal.type==='settings') renderModal(true); }
+async function natDisable(){ lsSet(NOTIF_OFF,'1'); natSched.sig=null; await nat('notif.clear'); toast(_L('Уведомления на этом устройстве выключены')); if(S.modal) renderModal(true); }
+function natItems(){ const pp=pushPrefs(), t=todayStr(), now=new Date(), nowHM=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'), out=[];
+  const future = (d,hm) => d>t || hm>nowHM;
+  const dname = x => [x.med.name, x.med.dose].filter(Boolean).join(' ');
+  for(let i=0;i<7;i++){ const d=addDays(t,i), doses=dosesOn(d);
+    const mt=validTime(pp.morning||''); if(mt && future(d,mt)){
+      const openT=tasksOn(d).filter(x=>!x.done).length, hN=habitsAll().filter(h=>!h.bad && scheduled(h,d) && !skipped(h,d)).length, bits=[];
+      if(openT) bits.push(openT+' '+plural(openT,'задача','задачи','задач')); if(hN) bits.push(hN+' '+plural(hN,'привычка','привычки','привычек'));
+      const pl=planDayFor(d), am=doses.filter(x=>!x.taken && x.time<'12:00').map(dname);
+      const body=[bits.length?_L('Сегодня: {0}.', bits.join(', ')):'', pl&&pl.name?_L('Зал: {0}.', pl.name):'', am.length?_L('Утром: {0}.', am.join(', ').replace(/\.$/,'')):''].filter(Boolean).join(' ') || _L('На сегодня плана нет — добавь главное.');
+      out.push({id:`shtab.${d}.morning`, date:d, time:mt, title:_L('Доброе утро'), body}); }
+    if(pp.meds){ const by={}; for(const x of doses) if(!x.taken && validTime(x.time) && future(d,x.time)) (by[x.time] ||= []).push(dname(x));
+      for(const [tm,names] of Object.entries(by)) out.push({id:`shtab.${d}.med.${tm}`, date:d, time:tm, title:_L('Пора принять · {0}', tm), body:names.join(', ')}); }
+    const et=validTime(pp.evening||''); if(et && future(d,et) && !(d===t && logOf(d).mood)){ const st=dayStats(d);
+      out.push({id:`shtab.${d}.evening`, date:d, time:et, title:_L('Закрой день'), body: d===t && st.total ? _L('Сделано {0} из {1}. Отметь настроение и сон — 20 секунд.', st.done, st.total) : _L('Отметь настроение и сон — 20 секунд.')}); } }
+  return out.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(0,60); }
+async function natSched(){ if(!NATIVE || lsGet(NOTIF_OFF)==='1' || S.ready.size<COLS.length) return; if(await nat('notif.status')!=='granted') return;
+  const items=natItems(), sig=JSON.stringify(items); if(sig===natSched.sig) return; natSched.sig=sig; await nat('notif.set',{items}); }
+let natT=null; function natSchedSoon(){ clearTimeout(natT); natT=setTimeout(()=>{ natSched().catch(e=>console.warn(e)); }, 2500); }
+function natFirstRun(){ if(!NATIVE || lsGet('shtab-notif-asked')) return; lsSet('shtab-notif-asked','1'); nat('notif.status').then(s=>{ if(s==='notDetermined') natEnable(); }); }
 function pushSyncTz(){ setTimeout(()=>{ try{ const tz=Intl.DateTimeFormat().resolvedOptions().timeZone; if(tz && P().tz!==tz && S.ready.size===COLS.length) Store.merge('meta','profile',{tz}); }catch(e){} }, 4000); }
 
 /* NOVA through the Anthropic API (own key, stays on this device) */
@@ -1871,7 +1906,7 @@ function apiSample(key){
 function pwaAI(){ const k=aiKey(); if(!k){ sample=null; S.aiOff=_L('NOVA в приложении работает с твоим ключом Anthropic API — добавь его в настройках.'); renderHero(); return; }
   sample=apiSample(k); sTools=true; sImages=true; S.aiOff=null; S.toolsBroken=false; renderHero(); }
 /* files: export and import */
-function saveFile(name, txt){ const blob=new Blob([txt],{type:'application/json'});
+function saveFile(name, txt){ if(NATIVE){ nat('share',{name, text:txt}); return; } const blob=new Blob([txt],{type:'application/json'});
   try{ const file=new File([blob], name, {type:'application/json'}); if(navigator.canShare && navigator.canShare({files:[file]})){ navigator.share({files:[file], title:name}).catch(()=>{}); return; } }catch(e){}
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
 async function importFile(file){ let o=null; try{ o=JSON.parse(await file.text()); }catch(e){ toast(_L('Это не файл копии Штаба.'),'bad'); return; }
@@ -1894,6 +1929,8 @@ function appSettingsHtml(){ const k=aiKey(), pp=pushPrefs();
   return `<div class="fld"><span>${_L('Синхронизация')}</span>${sync}</div>${push}
   <div class="fld"><span>NOVA</span><small>${k?_L('Ключ сохранён на этом устройстве.'):_L('Вставь ключ Anthropic API (console.anthropic.com → API Keys). Он хранится только на этом устройстве, оплата — по использованию.')} ${_L('Из России NOVA работает только с включённым VPN.')}</small><div class="addbar" style="margin:0"><input class="inp" id="ai-key" type="password" autocomplete="off" placeholder="${k?'••••••••'+esc(k.slice(-4)):'sk-ant-…'}" data-notr="1"><button class="btn sm" type="button" data-a="ai-key-save">${_L('Сохранить')}</button></div>${k?`<div class="btns"><button class="btn sm ghost" type="button" data-a="ai-key-test">${_L('Проверить ключ')}</button><button class="btn sm ghost" type="button" data-a="ai-key-del">${_L('Удалить ключ')}</button></div>`:''}</div>`; }
 async function refreshPushUi(){ const st=$('#push-state'), bt=$('#push-btns'); if(!st || !bt) return; const s=await pushState();
+  if(NATIVE){ st.textContent = s==='on' ? _L('Включены на этом iPhone. Приходят точно по времени, даже без интернета.') : s==='denied' ? _L('Уведомления запрещены в настройках телефона.') : _L('Выключены на этом устройстве.');
+    bt.innerHTML = s==='on' ? `<button class="btn sm ghost" type="button" data-a="push-off">${_L('Выключить здесь')}</button>` : s==='denied' ? `<button class="btn sm pri" type="button" data-a="nat-settings">${_L('Открыть настройки')}</button>` : `<button class="btn sm pri" type="button" data-a="push-on">${ico('bell','sm')}${_L('Включить уведомления')}</button>`; return; }
   const txt = !SY.cfg ? _L('Работают после подключения синхронизации.') : s==='unsupported' ? (isIOS() ? _L('На iPhone: открой Штаб с экрана «Домой», тогда появятся уведомления.') : _L('Этот браузер не поддерживает уведомления.')) : s==='denied' ? _L('Уведомления запрещены в настройках телефона.') : s==='on' ? _L('Включены на этом устройстве. Приходят примерно в указанное время (GitHub может задержать на 5–15 минут).') : (isIOS() && !isStandalone()) ? _L('На iPhone: открой Штаб с экрана «Домой», тогда их можно включить.') : _L('Выключены на этом устройстве.');
   st.textContent=txt; bt.innerHTML = !SY.cfg || s==='unsupported' ? '' : s==='on' ? `<button class="btn sm ghost" type="button" data-a="push-off">${_L('Выключить здесь')}</button>` : `<button class="btn sm pri" type="button" data-a="push-on">${ico('bell','sm')}${_L('Включить уведомления')}</button>`; }
 MODALS.ghhelp = function(){ const owner=(ghDefaultRepo().split('/')[0])||'login';
@@ -1911,19 +1948,20 @@ Object.assign(A, {
     try{ const res=await syConnect(t, r); toast(res.hasData ? `<b>${_L('Синхронизация включена')}</b>${_L('Загружаю данные из репозитория…')}` : `<b>${_L('Синхронизация включена')}</b>${_L('Данные этого устройства сохранены в репозиторий: {0}', res.uploaded)}`,'big'); setTimeout(()=>location.reload(), 900); }
     catch(e){ toast(esc((e&&e.message)||_L('Не получилось подключиться')),'bad'); el.disabled=false; el.innerHTML=old; } },
   async 'gh-sync'(){ try{ if(SY.queue.length) await syFlush(); await syPull(); toast(_L('Синхронизировано')); }catch(e){ toast(esc(syStateText()||e.message),'bad'); } syStatus(); },
-  'gh-off'(el){ if(!armed(el)) return; try{ localStorage.removeItem(GH_KEY); }catch(e){} KV.set('sync', null).then(()=>location.reload()); },
+  'gh-off'(el){ if(!armed(el)) return; try{ localStorage.removeItem(GH_KEY); }catch(e){} nat('store.set',{key:GH_KEY, value:null}).then(()=>KV.set('sync', null)).then(()=>location.reload()); },
   'gh-pair-copy'(){ const code=pairEncode(); const done=()=>toast(`<b>${_L('Код скопирован')}</b>${_L('На iPhone открой Штаб → Настройки → Синхронизация и вставь код в первое поле.')}`,'big');
     const legacy=()=>{ const ta=document.createElement('textarea'); ta.value=code; ta.setAttribute('readonly',''); ta.style.cssText='position:fixed;left:-9999px;top:0'; document.body.appendChild(ta); ta.select(); let ok=false; try{ ok=document.execCommand('copy'); }catch(e){} ta.remove(); return ok; };
     const show=()=>{ let f=$('#pair-code'); if(!f){ const box=$('#modal [data-a="gh-pair-copy"]'); if(!box) return; f=document.createElement('input'); f.id='pair-code'; f.className='inp'; f.readOnly=true; f.setAttribute('data-notr','1'); box.closest('.btns').after(f); } f.value=code; f.focus(); f.select(); toast(_L('Выдели код и скопируй: Cmd+C.')); };
     if(legacy()){ done(); return; }
     try{ navigator.clipboard.writeText(code).then(done, show); }catch(e){ show(); } },
   'push-on'(){ pushEnable(); },
+  'nat-settings'(){ nat('open',{url:'app-settings:'}); },
   'push-off'(){ pushDisable(); }
 });
 document.addEventListener('change', e=>{ const t=e.target; if(!['pp-m','pp-e','pp-meds'].includes(t.id)) return; const m=validTime(($('#pp-m')||{}).value)||'', ev=validTime(($('#pp-e')||{}).value)||'', md=!!($('#pp-meds')||{}).checked; Store.merge('meta','profile',{push:{morning:m, evening:ev, meds:md}}); toast(_L('Напоминания обновлены')); });
 Object.assign(A, {
-  'ai-key-save'(){ const v=(($('#ai-key')||{}).value||'').trim(); if(!/^sk-ant-/.test(v)){ toast(_L('Ключ начинается с sk-ant-'),'bad'); return; } lsSet(AIK_KEY, v); pwaAI(); toast(_L('Ключ сохранён')); renderModal(true); },
-  'ai-key-del'(){ try{ localStorage.removeItem(AIK_KEY); }catch(e){} pwaAI(); renderModal(true); },
+  'ai-key-save'(){ const v=(($('#ai-key')||{}).value||'').trim(); if(!/^sk-ant-/.test(v)){ toast(_L('Ключ начинается с sk-ant-'),'bad'); return; } lsSet(AIK_KEY, v); nat('store.set',{key:AIK_KEY, value:v}); pwaAI(); toast(_L('Ключ сохранён')); renderModal(true); },
+  'ai-key-del'(){ try{ localStorage.removeItem(AIK_KEY); }catch(e){} nat('store.set',{key:AIK_KEY, value:null}); pwaAI(); renderModal(true); },
   async 'ai-key-test'(){ if(!sample){ pwaAI(); } try{ const r=await sample([{role:'user', content:'Ответь одним словом: ок'}],{modelTier:'quick'}); toast(`<b>${_L('Ключ работает')}</b>NOVA: ${esc(String(r.text||'').slice(0,40))}`,'big'); }catch(e){ toast(esc((e&&e.message)||_L('Не получилось')),'bad'); } },
   'import-pick'(){ const i=$('#imp-file'); if(i) i.click(); }
 });
@@ -1962,6 +2000,7 @@ function init(){
   const h=(location.hash||'').slice(1); if(VIEWS[h]) S.tab=h;
   derive(); render(true);
   connect(); initAI();
+  if(NATIVE){ setTimeout(natFirstRun, 2500); document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ natSched.sig=null; natSchedSoon(); } }); }
 }
 init();
 })();

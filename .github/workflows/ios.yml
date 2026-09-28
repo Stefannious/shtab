@@ -1,0 +1,84 @@
+name: iOS app
+# Собирает Штаб для iPhone: .ipa без подписи (для Sideloadly/AltStore) и проект Xcode.
+# Результат — релиз «ios-latest»: https://github.com/Stefannious/shtab/releases/tag/ios-latest
+on:
+  push:
+    branches: [main]
+    paths: ['ios/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: ios
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Pick Xcode
+        run: |
+          X=$(ls -d /Applications/Xcode_*.app | grep -iv beta | sort -V | tail -1)
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          cd ios && xcodegen generate
+
+      - name: Build for iPhone (unsigned .ipa)
+        run: |
+          cd ios
+          xcodebuild -project Shtab.xcodeproj -scheme Shtab -configuration Release -sdk iphoneos \
+            -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} build -quiet
+          rm -rf Payload && mkdir Payload
+          cp -R build/device/Build/Products/Release-iphoneos/Shtab.app Payload/
+          zip -qry ../Shtab.ipa Payload
+          ls -la ../Shtab.ipa
+
+      - name: Run in the simulator and take screenshots
+        run: |
+          mkdir -p shots
+          cd ios
+          xcodebuild -project Shtab.xcodeproj -scheme Shtab -configuration Debug -sdk iphonesimulator \
+            -derivedDataPath build/sim CODE_SIGNING_ALLOWED=NO build -quiet
+          UDID=$(python3 ci/pick_sim.py); echo "simulator $UDID"
+          xcrun simctl boot "$UDID"; xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build/sim/Build/Products/Debug-iphonesimulator/Shtab.app
+          xcrun simctl launch "$UDID" com.stefannious.shtab
+          sleep 10; xcrun simctl io "$UDID" screenshot ../shots/1-start.png
+          sleep 20; xcrun simctl io "$UDID" screenshot ../shots/2-running.png
+          xcrun simctl ui "$UDID" appearance dark; sleep 4; xcrun simctl io "$UDID" screenshot ../shots/3-dark-system.png
+          echo "--- is the app alive?"; xcrun simctl spawn "$UDID" launchctl list | grep -i stefannious || echo "NOT RUNNING"
+          xcrun simctl spawn "$UDID" log show --last 3m --style compact --predicate 'process == "Shtab"' | tail -60 > ../shots/log.txt || true
+
+      - name: Publish screenshots (branch ios-shots)
+        if: always()
+        run: |
+          [ -d shots ] || exit 0
+          cd shots
+          git init -q -b ios-shots
+          git add .
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "screenshots #${{ github.run_number }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ios-shots
+
+      - name: Keep the generated Xcode project in the repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ios/Shtab.xcodeproj
+          if ! git diff --cached --quiet; then git commit -qm "iOS: проект Xcode (сгенерирован)"; git pull -q --rebase; git push -q; fi
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf ios/build ios/Payload
+          zip -qry Shtab-Xcode.zip ios -x "ios/ci/*"
+          gh release delete ios-latest --yes --cleanup-tag || true
+          gh release create ios-latest Shtab.ipa Shtab-Xcode.zip \
+            --title "Штаб для iPhone · сборка ${{ github.run_number }}" --notes-file ios/RELEASE.md --latest

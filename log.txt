@@ -1,0 +1,60 @@
+2026-09-28 20:06:20.753 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c2943c0 - ServiceWorkerRegistration::updateStateFromServer: Setting registration 24 waiting worker to 27
+2026-09-28 20:06:20.753 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c8f41e0 - ServiceWorkerRegistration::updateStateFromServer: Setting registration 24 installing worker to 0
+2026-09-28 20:06:20.753 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c8ec100 - ServiceWorker::updateState: Updating service worker 27 state from 1 to 2. registrationID=24
+2026-09-28 20:06:20.754 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c8f41e0 - ServiceWorkerRegistration::updateStateFromServer: Setting registration 24 active worker to 27
+2026-09-28 20:06:20.754 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c8f41e0 - ServiceWorkerRegistration::updateStateFromServer: Setting registration 24 waiting worker to 0
+2026-09-28 20:06:20.754 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c2943c0 - ServiceWorkerRegistration::updateStateFromServer: Setting registration 24 installing worker to 0
+2026-09-28 20:06:20.755 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c2fcb20 - ServiceWorker::updateState: Updating service worker 27 state from 1 to 2. registrationID=24
+2026-09-28 20:06:20.755 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c2943c0 - ServiceWorkerRegistration::updateStateFromServer: Setting registration 24 active worker to 27
+2026-09-28 20:06:20.755 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c2943c0 - ServiceWorkerRegistration::updateStateFromServer: Setting registration 24 waiting worker to 0
+2026-09-28 20:06:20.755 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c2fcb20 - ServiceWorker::updateState: Updating service worker 27 state from 2 to 3. registrationID=24
+2026-09-28 20:06:20.755 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c8ec100 - ServiceWorker::updateState: Updating service worker 27 state from 2 to 3. registrationID=24
+2026-09-28 20:06:20.756 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] ServiceWorkerThread::queueTaskToFireActivateEvent firing event for worker 27
+2026-09-28 20:06:20.928 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] ServiceWorkerThread::queueTaskToFireActivateEvent finishing for worker 27
+2026-09-28 20:06:20.929 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c8ec100 - ServiceWorker::updateState: Updating service worker 27 state from 3 to 4. registrationID=24
+2026-09-28 20:06:20.929 Df Shtab[12566:a071] [com.apple.WebKit:ServiceWorker] WebContent[12573] 0x10c2fcb20 - ServiceWorker::updateState: Updating service worker 27 state from 3 to 4. registrationID=24
+2026-09-28 20:06:21.034 Df Shtab[12566:a015] [com.apple.xpc:connection] [0x104b15d70] activating connection: mach=true listener=false peer=false name=com.apple.ScreenTimeAgent
+2026-09-28 20:06:21.122 Df Shtab[12566:a015] [com.apple.WebKit:ScreenTime] Screen Time has updated to use the system shield for any blocked URL.
+2026-09-28 20:06:21.334 Df Shtab[12566:a071] [com.apple.WebKit:Network] WebContent[12573]: [pageID=9, frameID=4294967297, resourceID=282] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-09-28 20:06:21.334 Df Shtab[12566:a071] [com.apple.WebKit:ResourceLoading] WebContent[12573]: [pageID=9, frameID=4294967297, resourceID=282 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-09-28 20:06:21.334 Df Shtab[12566:a071] [com.apple.WebKit:Network] WebContent[12573]: [webPageID=9, frameID=9, resourceID=9] WebLoaderStrategy::scheduleLoad: URL will be scheduled with the NetworkProcess
+2026-09-28 20:06:21.334 Df Shtab[12566:a071] [com.apple.WebKit:Network] WebContent[12573]: [webPageID=9, frameID=9, resourceID=9] WebLoaderStrategy::scheduleLoad: Resource is being scheduled with the NetworkProcess (priority=2, existingNetworkResourceLoadIdentifierToResume=0)
+2026-09-28 20:06:21.334 Df Shtab[12566:a071] [com.apple.WebKit:Network] WebContent[12573]: [webPageID=9, frameID=4294967297, resourceID=282] WebResourceLoader::WebResourceLoader
+2026-09-28 20:06:21.518 Df Shtab[12566:a071] [com.apple.WebKit:Network] WebContent[12573]: [webPageID=9, frameID=4294967297, resourceID=282] WebResourceLoader::didReceiveResponse: (httpStatusCode=200)
+2026-09-28 20:06:21.519 Df Shtab[12566:a071] [com.apple.WebKit:Network] WebContent[12573]: [webPageID=9, frameID=4294967297, resourceID=282] WebResourceLoader::didReceiveData: Started receiving data
+2026-09-28 20:06:21.520 Df Shtab[12566:a071] [com.apple.WebKit:Network] WebContent[12573]: [webPageID=9, frameID=4294967297, resourceID=282] WebResourceLoader::didFinishResourceLoad: (length=21264)
+2026-09-28 20:06:21.520 Df Shtab[12566:a071] [com.apple.WebKit:ResourceLoading] WebContent[12573]: [pageID=9, frameID=4294967297, resourceID=282 SubResourceLoader::didFinishLoading
+2026-09-28 20:06:22.210 Df Shtab[12566:a015] [com.apple.UserNotifications:Connections] [com.stefannious.shtab] Getting notification settings (async)
+2026-09-28 20:06:22.220 Df Shtab[12566:a028] [com.apple.xpc:connection] [0x10472c4b0] activating connection: mach=true listener=false peer=false name=com.apple.usernotifications.listener
+2026-09-28 20:06:22.307 Df Shtab[12566:a015] [com.apple.UserNotifications:Connections] [com.stefannious.shtab] Getting notification settings (async)
+2026-09-28 20:06:22.318 Df Shtab[12566:a031] [com.apple.UserNotifications:Connections] [com.stefannious.shtab] Got notification settings [ hasResult: 1 hasCompletionHandler: 1 ]
+2026-09-28 20:06:22.322 Df Shtab[12566:a028] [com.apple.UserNotifications:Connections] [com.stefannious.shtab] Got notification settings [ hasResult: 1 hasCompletionHandler: 1 ]
+2026-09-28 20:06:22.336 Df Shtab[12566:a015] [com.apple.UserNotifications:Connections] [com.stefannious.shtab] Requesting authorization with options 7
+2026-09-28 20:06:22.596 Df Shtab[12566:a031] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x6000026070c0; token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.stefannious.shtab-default; status: none> was:ancestor
+2026-09-28 20:06:22.596 Df Shtab[12566:a031] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x600002611d40; environment: keyboardFocus; status: none> was:target
+2026-09-28 20:06:22.596 Df Shtab[12566:a015] [com.apple.UIKit:KeyWindow] Scene target of keyboard event deferring environment did change: 0; scene: UIWindowScene: 0x104b0b410; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.stefannious.shtab-default
+2026-09-28 20:06:22.866 Df Shtab[12566:a015] [com.apple.WebKit:ProcessSuspension] 0x112114100 NavigationState is releasing background process assertion because a page load completed
+2026-09-28 20:06:22.866 Df Shtab[12566:a015] [com.apple.WebKit:ProcessSuspension] 0x1120c4270 - [PID=12573, throttler=0x1120a8150] ProcessThrottler::Activity::invalidate: Ending background activity / 'Page Load'
+2026-09-28 20:06:22.975 Df Shtab[12566:a015] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.stefannious.shtab-default  persistentID: 406D7612-999C-40BF-B0B7-7C466C88DAEF
+2026-09-28 20:06:22.976 Df Shtab[12566:a015] [com.apple.UIKit:UIAlertControllerStackManager] canShowAlerts Updated: <FBSSceneSettingsDiff: 0x600001723b80; UIApplicationSceneSettings> {
+    subclassSettings = <BSSettingsDiff: 0x600000c45050> {
+        canShowAlerts = NO;
+    };
+}
+2026-09-28 20:06:22.976 Df Shtab[12566:a015] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x104b0b410> (406D7612-999C-40BF-B0B7-7C466C88DAEF)
+2026-09-28 20:06:22.977 Df Shtab[12566:a015] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.stefannious.shtab-default  persistentID: 406D7612-999C-40BF-B0B7-7C466C88DAEF
+2026-09-28 20:06:22.977 Df Shtab[12566:a015] [com.apple.UIKit:Application] Deactivation reason added: 13; deactivation reasons: 0 -> 8192; animating application lifecycle event: 0
+2026-09-28 20:06:22.978 A  Shtab[12566:a015] (GameController) Notify ApplicationWillResignActive
+2026-09-28 20:06:22.978 Df Shtab[12566:a015] [com.apple.UIKit:Application] Ignoring already applied deactivation reason: 13; deactivation reasons: 8192
+2026-09-28 20:06:22.978 Df Shtab[12566:a015] [com.apple.UIKit:Application] Deactivation reason added: 12; deactivation reasons: 8192 -> 12288; animating application lifecycle event: 0
+2026-09-28 20:06:22.992 Df Shtab[12566:a015] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.stefannious.shtab-default  persistentID: 406D7612-999C-40BF-B0B7-7C466C88DAEF
+2026-09-28 20:06:23.024 Df Shtab[12566:a071] [com.apple.WebKit:Media] WebContent[12573] MediaSessionManageriOS::applicationWillBecomeInactive(0)
+2026-09-28 20:06:29.828 Df Shtab[12566:a071] [com.apple.WebKit:PerformanceLogging] WebContent[12573]: PerformanceMonitor::measurePostLoadMemoryUsage: Process was using 33644160 bytes of memory after the page load.
+2026-09-28 20:06:34.829 Df Shtab[12566:a071] [com.apple.WebKit:PerformanceLogging] WebContent[12573]: PerformanceMonitor::measurePostLoadCPUUsage: Process was using 10.7% CPU after the page load.
+2026-09-28 20:07:12.916 Df Shtab[12566:a015] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.stefannious.shtab-default  persistentID: 406D7612-999C-40BF-B0B7-7C466C88DAEF
+2026-09-28 20:07:12.917 Df Shtab[12566:a015] [com.apple.UIKit:InterfaceStyle] Scene did update interface style to 2, <UIWindowScene: 0x104b0b410> (406D7612-999C-40BF-B0B7-7C466C88DAEF)
+2026-09-28 20:07:13.381 Df Shtab[12566:a015] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 2, <UIWindowScene: 0x104b0b410> (406D7612-999C-40BF-B0B7-7C466C88DAEF)
+2026-09-28 20:07:13.404 Df Shtab[12566:a015] [com.apple.UIKit:InterfaceStyle] Push traits update to screen for new style 2, <UIWindowScene: 0x104b0b410> (406D7612-999C-40BF-B0B7-7C466C88DAEF)
+2026-09-28 20:07:13.426 Df Shtab[12566:a015] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.stefannious.shtab-default  persistentID: 406D7612-999C-40BF-B0B7-7C466C88DAEF
+2026-09-28 20:07:14.525 Df Shtab[12566:a015] [com.apple.UIKit:EventEnvironment] Enqueuing clear events of window: <_UIWindowSceneUserInterfaceStyleAnimationSnapshotWindow: 0x104733f30>; contextId: 0x728E3144
+2026-09-28 20:07:14.526 Df Shtab[12566:a015] [com.apple.UIKit:EventEnvironment] Performing clear events of window: <_UIWindowSceneUserInterfaceStyleAnimationSnapshotWindow: 0x104733f30>; contextId: 0x0

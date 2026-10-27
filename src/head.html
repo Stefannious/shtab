@@ -1265,6 +1265,23 @@ details.more[open] > summary::after{content:''}
 .w7.s-td i{border-color:var(--flame); border-style:dashed}
 .w7.s-td span{color:var(--text)}
 .w7.s-miss i{background:var(--line)}
+
+.nova-btn{color:var(--acc-ink) !important; background:var(--acc) !important; border:0 !important; box-shadow:0 2px 0 rgba(0,0,0,.2)}
+.nova-btn .ico{width:20px; height:20px}
+.nova-ask{display:flex; align-items:center; gap:10px; width:100%; height:52px; padding:0 16px; margin:0 0 14px; border-radius:16px; background:var(--panel); border:1.5px solid var(--acc); color:var(--text2); font:600 15px var(--f-sys); text-align:left}
+.nova-ask .ico{width:20px; height:20px; color:var(--acc)}
+
+@media (max-width:600px){
+  .hello h1{font-size:26px !important}
+  .tb-right{gap:6px !important}
+  .gchip,.lvl-chip{height:36px !important}
+  .gchip{padding:0 10px 0 3px !important} .gchip .sr{width:32px; height:32px}
+  .lvl-chip{padding:0 10px 0 6px !important}
+  .tb-right .icon-btn{width:36px; height:36px}
+  .topbar .sync.live{display:none}
+}
+.topbar{gap:8px} .hello{flex:1 1 auto; overflow:hidden}
+.tb-right{flex:none}
 </style>
 
 <div class="minibar" id="minibar" aria-hidden="true"></div>
@@ -1288,6 +1305,7 @@ details.more[open] > summary::after{content:''}
           <button class="gchip" data-a="tab" data-tab="progress" id="streak-chip" aria-label="Серия"></button>
           <button class="lvl-chip" data-a="tab" data-tab="progress" id="lvl-chip" aria-label="Уровень"></button>
           <span class="sync" id="sync" title="Синхронизация"></span>
+          <button class="icon-btn nova-btn" data-a="core-open" aria-label="Спросить NOVA" id="nova-btn" hidden></button>
           <button class="icon-btn" data-a="settings" aria-label="Настройки" id="gear"></button>
         </div>
       </header>

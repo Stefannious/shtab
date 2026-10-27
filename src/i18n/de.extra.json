@@ -204,5 +204,7 @@
  "Верх B": "Oberkörper B",
  "Низ A": "Unterkörper A",
  "Низ B": "Unterkörper B",
- "#тренировка": "Training|Trainings"
+ "#тренировка": "Training|Trainings",
+ "Спросить {0}…": "{0} fragen…",
+ "Спросить NOVA": "NOVA fragen"
 }

@@ -203,5 +203,7 @@
  "Верх B": "Upper B",
  "Низ A": "Lower A",
  "Низ B": "Lower B",
- "#тренировка": "workout|workouts"
+ "#тренировка": "workout|workouts",
+ "Спросить {0}…": "Ask {0}…",
+ "Спросить NOVA": "Ask NOVA"
 }

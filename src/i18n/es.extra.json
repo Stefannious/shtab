@@ -203,5 +203,7 @@
  "Верх B": "Tren superior B",
  "Низ A": "Tren inferior A",
  "Низ B": "Tren inferior B",
- "#тренировка": "entrenamiento|entrenamientos"
+ "#тренировка": "entrenamiento|entrenamientos",
+ "Спросить {0}…": "Preguntar a {0}…",
+ "Спросить NOVA": "Preguntar a NOVA"
 }

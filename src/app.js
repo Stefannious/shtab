@@ -2037,6 +2037,7 @@ function chips14(){
   const g=D.gs||{s:0,tx:0,tg:GOAL_DEF,today:false}, pct=Math.min(1, g.tx/(g.tg||1)), C=2*Math.PI*14;
   const sc=$('#streak-chip'); if(sc){ const h=`<svg viewBox="0 0 34 34" class="sr" aria-hidden="true"><circle cx="17" cy="17" r="14" class="sr-t"/><circle cx="17" cy="17" r="14" class="sr-b ${g.today?'full':''}" stroke-dasharray="${(C*pct).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 17 17)"/></svg>${flameSvg(g.today)}<b class="num">${g.s}</b>`;
     if(sc.__h!==h){ sc.innerHTML=h; sc.__h=h; } sc.setAttribute('aria-label', _L('Серия {0} · сегодня {1} из {2} XP', g.s, g.tx, g.tg)); sc.classList.toggle('lit', g.today); }
+  const nb=$('#nova-btn'); if(nb){ const on=!!(sample && !S.aiOff); if(nb.hidden===on) nb.hidden=!on; if(!nb.firstChild) nb.innerHTML=ico('spark'); nb.setAttribute('aria-label', _L('Спросить {0}', P().ai)); }
   const lc=$('#lvl-chip'); if(lc){ const lg=D.league||LEAGUES[0], h=`${gemSvg(lg.c)}<b class="num">${D.level}</b>`; if(lc.__h!==h){ lc.innerHTML=h; lc.__h=h; } lc.setAttribute('aria-label', _L('Уровень {0} · лига «{1}»', D.level, _L(lg.n))); }
 }
 let tapXY=null, tapAt=0;
@@ -2091,7 +2092,7 @@ VIEWS.home = vHome14;
 /* ---------- quick add (the + in the middle) ---------- */
 MODALS.quick = function(){ const ai = sample && !S.aiOff;
   const qs=[['new-task','tasks','Задача','#2F7DE1'],['new-habit','habits','Привычка','#FF9500'],['new-med','pill','Таблетка','#22BFD0'],['food-add','food','Еда','#58A700'],['mood-open','mood','Состояние','#E9A800'],['fab-gym','gym','Тренировка','#E0245E']];
-  return `<h3>${_L('Добавить')}</h3><div class="quick q14">${qs.map(([a,i,l,c])=>`<button class="qa" type="button" data-a="${a}" style="--qc:${c}"><span class="qi">${ico(i)}</span><span>${_L(l)}</span></button>`).join('')}</div>${ai?`<button class="btn wide" type="button" data-a="core-open">${ico('spark','sm')}${_L('Спросить {0}', esc(P().ai))}</button>`:''}`; };
+  return `<h3>${_L('Добавить')}</h3>${ai?`<button class="nova-ask" type="button" data-a="core-open">${ico('spark')}<span>${_L('Спросить {0}…', esc(P().ai))}</span></button>`:''}<div class="quick q14">${qs.map(([a,i,l,c])=>`<button class="qa" type="button" data-a="${a}" style="--qc:${c}"><span class="qi">${ico(i)}</span><span>${_L(l)}</span></button>`).join('')}</div>`; };
 
 /* ---------- «Тело» → Зал ---------- */
 const COMPOUND = new Set(['Приседания со штангой','Жим штанги лёжа','Становая тяга','Румынская тяга','Тяга штанги в наклоне','Жим штанги стоя','Жим ногами','Подтягивания','Отжимания на брусьях']);

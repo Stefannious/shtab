@@ -109,7 +109,10 @@ const ICONS = {
   up:'<path d="M6 15l6-6 6 6"/>',
   down:'<path d="M6 9l6 6 6-6"/>',
   spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/>',
-  bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'
+  bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+  list:'<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
+  snow:'<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5L12 6l2.5-1.5M9.5 19.5L12 18l2.5 1.5"/>',
+  trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/>'
 };
 const ico = (n, cls='') => `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
 
@@ -313,9 +316,6 @@ function derive(){
     if(!baseline){ baseline={xp, level:L.level, ach:new Set(ach), full}; }
     else {
       if(xp>baseline.xp) xpPop(xp-baseline.xp);
-      if(L.level>baseline.level) toast(`<b>${_L('Новый уровень · {0}', L.level)}</b>${_L('Ранг {0} — {1}', D.rank.l, esc(D.rank.n))}`,'big');
-      for(const id of ach) if(!baseline.ach.has(id)){ const a=ACH.find(x=>x.id===id); if(a) toast(`<b>${_L('Достижение: {0}', esc(a.t))}</b>${esc(a.d)}`,'big'); }
-      if(full && !baseline.full){ toast('<b>День закрыт на 100%</b>Весь план выполнен.','big'); setTimeout(celebrate, 60); }
       baseline={xp, level:L.level, ach:new Set(ach), full};
     }
   }
@@ -368,21 +368,20 @@ function renderChrome(){
   { const tb=$('.tabbar'); if(tb){ const ti=[...tb.querySelectorAll(':scope > .tab')].findIndex(b=>b.classList.contains('on')); tb.style.setProperty('--ti', Math.max(0,ti)); tb.dataset.ti=ti; } }
   const h=new Date().getHours();
   const g = h<5 ? 'Доброй ночи' : h<12 ? 'Доброе утро' : h<18 ? 'Добрый день' : h<23 ? 'Добрый вечер' : 'Доброй ночи';
-  $('#hello').innerHTML = p.name ? `${esc(g)},<br><em>${esc(p.name)}</em>` : esc(g);
-  $('#today-lbl').textContent = fLong.format(new Date());
+  { const ht=_L(pageTitle()); if($('#hello').textContent!==ht) $('#hello').textContent=ht; const dl=S.tab==='home'?cap(new Intl.DateTimeFormat(LOCALES[LANG]||'ru-RU',{weekday:'short', day:'numeric', month:'long'}).format(new Date()).replace('.','')):''; if($('#today-lbl').textContent!==dl) $('#today-lbl').textContent=dl; }
   { const tt = LANG==='ru' ? ('Штаб '+(p.name||'')).trim() : _L('Штаб')+(p.name?' · '+_L(p.name):''); if(document.title!==tt) document.title=tt; }
-  $('#lv-rk').textContent = D.rank.l; $('#lv-t').textContent = _L('УР {0}', D.level); $('#lv-bar').style.width = Math.round(D.into/D.need*100)+'%';
+  chips14();
   const cls = S.mode==='live' ? 'live' : S.mode==='local' ? 'local' : '';
   ['#sync','#sync2'].forEach(s=>{ const n=$(s); if(n) n.className='sync '+cls; });
   $('#sync').title = S.mode==='live' ? 'Синхронизировано' : S.mode==='local' ? 'Только этот браузер' : 'Подключение…';
   $('#sync-lbl').textContent = S.mode==='live' ? 'синхронизация' : S.mode==='local' ? 'локально' : 'подключение';
   if(IS_PWA && SY.cfg) syStatus();
-  $('#brand-name').textContent = p.ai; $('#core-name').textContent = p.ai;
+  $('#brand-name').textContent = _L('Штаб'); $('#core-name').textContent = p.ai;
   const b=$('#banner');
   const bh = S.mode==='local' && !IS_PWA ? '<div class="banner">Синхронизация недоступна в этом окне: данные сохраняются только в этом браузере.</div>'
     : S.mode==='revoked' ? '<div class="banner">Доступ к данным закрыт. Обнови страницу или проверь доступ к ней.</div>' : '';
   if(b.innerHTML!==bh) b.innerHTML=bh;
-  $('#hero').hidden = S.tab!=='home';
+  $('#hero').hidden = true; document.body.classList.toggle('in-wo', S.tab==='gym' && !!S.draft && !S.woList);
 
 }
 
@@ -451,7 +450,7 @@ function vTasks(){
   const sel=S.selDate, t=todayStr(), mon=addDays(sel, 1-wdOf(sel));
   let days=''; for(let i=0;i<7;i++){ const d=addDays(mon,i), arr=D.tbd.get(d)||[], open=arr.filter(x=>!x.done).length; days+=`<button class="wd ${d===t?'today':''} ${d===sel?'sel':''}" data-a="sel-day" data-d="${d}" aria-label="${esc(dayLabel(d))}"><span>${WD[i]}</span><b>${parseYmd(d).getDate()}</b>${arr.length?`<i class="dot ${open?'':'all'}"></i>`:''}</button>`; }
   const arr=tasksOn(sel), open=arr.filter(x=>!x.done), done=arr.filter(x=>x.done), od = sel===t ? overdue() : [];
-  return `<div class="page-h"><div><h1>${_L('Задачи')}</h1><p>${_L('{0}{1} · открыто {2}', esc(dayLabel(sel)), sel!==t&&sel!==addDays(t,1)&&sel!==addDays(t,-1)?'':' · '+esc(fDMY.format(parseYmd(sel))), open.length)}</p></div><div class="btns">${sel!==t?`<button class="btn sm" data-a="sel-day" data-d="${t}">${_L('Сегодня')}</button>`:''}<button class="btn sm" data-a="new-task" data-d="${sel}">${ico('plus','sm')}${_L('Подробно')}</button></div></div>
+  return `${sel!==t?`<div class="btns tools"><button class="btn sm" data-a="sel-day" data-d="${t}">${_L('К сегодня')}</button></div>`:''}
   <div class="week"><button class="btn sm icon" data-a="week" data-v="-7" aria-label="${_L('Прошлая неделя')}">${ico('left','sm')}</button><div class="week-days">${days}</div><button class="btn sm icon" data-a="week" data-v="7" aria-label="${_L('Следующая неделя')}">${ico('right','sm')}</button></div>
   <form class="addbar" data-f="quick-task" autocomplete="off"><input class="inp" id="qt-title" data-keep="1" placeholder="${_L('Новая задача: {0}', esc(lcf(_L(dayLabel(sel)))))}" maxlength="200" enterkeyhint="done" aria-label="${_L('Новая задача')}"><input class="inp t-in" id="qt-time" type="time" aria-label="${_L('Время')}"><button class="btn pri icon" type="submit" aria-label="${_L('Добавить')}">${ico('plus')}</button></form>
   ${od.length?`<div class="hud overdue"><div class="overdue-h"><span>${_L('Просрочено: {0}', od.length)}</span><button class="btn sm" data-a="carry">${_L('Перенести на сегодня')}</button></div><div class="list">${od.map(x=>taskRow(x,true)).join('')}</div></div>`:''}
@@ -480,13 +479,13 @@ function vHabits(){
   const t=todayStr(), hs=habitsAll(), today=hs.filter(h=>scheduled(h,t)), other=hs.filter(h=>!scheduled(h,t));
   const ds=dosesOn(t), otherMeds=medsAll().filter(m=>!medScheduled(m,t));
   const hdone=today.filter(h=>!skipped(h,t)&&isDone(h,t)).length;
-  return `<div class="page-h"><div><h1>${_L('Привычки')}</h1><p>${_L('Дисциплина за 7 дней: {0} · один пропуск в неделю серию не сжигает', D.disc7==null?'—':D.disc7+'%')}</p></div><div class="btns"><button class="btn sm" data-a="new-habit">${ico('plus','sm')}${_L('Привычка')}</button><button class="btn sm" data-a="new-med">${ico('plus','sm')}${_L('Таблетка')}</button></div></div>
+  return `<div class="btns tools"><button class="btn sm" data-a="new-habit">${ico('plus','sm')}${_L('Привычка')}</button><button class="btn sm" data-a="new-med">${ico('plus','sm')}${_L('Таблетка')}</button></div>
   <div class="sec-h"><h2>${_L('Сегодня')}</h2><span class="aside num">${hdone}/${today.length}</span></div>
   <div class="hud list">${today.length ? today.map(h=>habitRow(h,t)).join('') : '<div class="empty">На сегодня привычек нет.</div>'}</div>
   <div class="sec-h"><h2>${_L('Таблетки и витамины')}</h2><span class="aside num">${ds.filter(x=>x.taken).length}/${ds.length}</span></div>
   <div class="hud list">${ds.length ? ds.map(doseRow).join('') : '<div class="empty">Добавь таблетки или витамины: они появятся здесь по времени приёма.</div>'}</div>
   ${other.length||otherMeds.length?`<div class="sec-h"><h2>${_L('Не сегодня')}</h2></div><div class="hud list">${other.map(h=>habitRow(h,t,true)).join('')}${otherMeds.map(m=>`<div class="row"><span class="h-ico">${ico('pill')}</span><button class="main-t" data-a="edit-med" data-id="${m.id}"><span class="ttl">${esc(m.name)}</span><span class="sub"><span>${esc((m.times||[]).join(', '))}</span><span>${esc(daysText(m.days))}</span></span></button></div>`).join('')}</div>`:''}
-  <p class="muted" style="font-size:12.5px;margin-top:12px">${_L('Нажми на привычку, чтобы увидеть историю, пропустить день или изменить её.')}</p>`;
+`;
 }
 
 function vGym(){
@@ -547,7 +546,7 @@ function vWorkout(){
   return `<div class="hud wo-bar"><div><div class="t-lbl">${ico('gym')}${_L('Тренировка идёт · {0} {1}', doneSets, plural(doneSets,'подход','подхода','подходов'))}</div><h3 style="margin:3px 0 0;font:500 18px/1.25 var(--f-disp)">${esc(w.name||'Свободная тренировка')}</h3></div><span class="clock" data-elapsed>${fmtClock(el)}</span><div class="btns"><button class="btn danger sm" data-a="wo-cancel" data-confirm="${_L('Точно отменить?')}">${_L('Отменить')}</button><button class="btn sm" data-a="focus">${_L('Фокус')}</button><button class="btn pri" data-a="wo-finish">${ico('check','sm')}${_L('Завершить')}</button></div></div>
   ${cards || '<div class="hud empty" style="margin-top:10px">Добавь первое упражнение.</div>'}
   <div class="btns" style="margin-top:12px"><button class="btn" data-a="wo-add-ex">${ico('plus','sm')}${_L('Упражнение')}</button></div>
-  <p class="muted" style="font-size:12.5px;margin-top:10px">${_L('Вес в подходах уже подставлен по рекомендации — поправь, если делаешь другой. Отметь подход галочкой: запустится таймер отдыха, а следующий подход подстроится под то, как прошёл этот.')}</p>`;
+  <div class="btns" style="margin-top:12px"><button class="btn" data-a="wo-list">${ico('left','sm')}${_L('К упражнению')}</button></div>`;
 }
 function stat(label, value){ return `<div class="hud stat"><div class="t-lbl">${esc(label)}</div><div class="t-val num">${value}</div></div>`; }
 function vProgress(){
@@ -1099,14 +1098,14 @@ function targets(){
 function macroBar(label, v, t){ const pct=t ? Math.min(100, v/t*100) : 0, over=t && v>t*1.1; return `<div class="mac"><div class="mac-h"><span>${label}</span><span class="num"><b>${r0(v)}</b>${t?` ${_L('/ {0} г', r0(t))}`:' г'}</span></div><div class="meter"><i style="width:${pct}%;${over?'background:var(--warn)':''}"></i></div></div>`; }
 function vFood(){
   const d=S.foodDate, t=todayStr(), T=targets(), items=foodItems(d), s=sumFood(items), left=T ? T.kcal-s.kcal : null;
-  const head=`<div class="page-h"><div><h1>${_L('Питание')}</h1><p>${esc(dayLabel(d))}${d!==t?' · '+esc(fDMY.format(parseYmd(d))):''}</p></div><div class="btns"><button class="btn sm icon" data-a="food-day" data-v="-1" aria-label="${_L('Предыдущий день')}">${ico('left','sm')}</button>${d!==t?`<button class="btn sm" data-a="food-day" data-d="${t}">${_L('Сегодня')}</button>`:''}<button class="btn sm icon" data-a="food-day" data-v="1" aria-label="${_L('Следующий день')}" ${d>=t?'disabled':''}>${ico('right','sm')}</button><button class="btn sm" data-a="nutri-edit">${_L('Параметры')}</button></div></div>`;
-  const onboard = T ? '' : `<div class="hud pad onboard" style="margin-top:14px"><div class="t-lbl">${ico('food')}${_L('Норма КБЖУ')}</div><h3 style="margin:6px 0 4px;font:500 18px/1.3 var(--f-disp)">${_L('Рассчитаю, сколько тебе есть')}</h3><p class="dim" style="margin:0 0 12px;font-size:14px">${_L('Нужны пол, возраст, рост, вес, телосложение, активность и цель. По ним посчитаю калории, белки, жиры и углеводы на день.')}</p><button class="btn pri" data-a="nutri-edit">${_L('Рассчитать норму')}</button></div>`;
-  const card=`<div class="hud kcal-card"><div><div class="t-lbl">${_L('Калории')}</div><div class="kc-val num"><b>${nf.format(r0(s.kcal))}</b><small>${_L('{0} ккал', T?` / ${nf.format(T.kcal)}`:'')}</small></div><div class="meter big"><i style="width:${T?Math.min(100,s.kcal/T.kcal*100):0}%;${T&&s.kcal>T.kcal*1.1?'background:var(--warn)':''}"></i></div><div class="dim" style="font-size:13.5px">${T ? (left>=0 ? `${_L('Осталось')} <b style="color:var(--text)">${nf.format(r0(left))}</b> ${_L('ккал')}` : `${_L('Больше нормы на')} <b style="color:var(--warn)">${nf.format(r0(-left))}</b> ${_L('ккал')}`) : 'Рассчитай норму, чтобы видеть остаток'}</div></div><div class="macs">${macroBar('Белки',s.p,T&&T.p)}${P().nutriMode==='light'?'':macroBar('Жиры',s.f,T&&T.f)+macroBar('Углеводы',s.c,T&&T.c)}</div></div><div class="btns" style="margin-top:8px"><button class="btn sm ghost" data-a="nutri-light">${P().nutriMode==='light'?'Показать жиры и углеводы':'Лёгкий режим: только калории и белок'}</button></div>`;
+  const head=`<div class="daynav"><button class="btn sm icon" data-a="food-day" data-v="-1" aria-label="${_L('Предыдущий день')}">${ico('left','sm')}</button><button class="dn-t" data-a="food-day" data-d="${t}">${esc(dayLabel(d))}${d!==t&&d!==addDays(t,-1)?'':''}</button><button class="btn sm icon" data-a="food-day" data-v="1" aria-label="${_L('Следующий день')}" ${d>=t?'disabled':''}>${ico('right','sm')}</button><button class="btn sm icon ghost" data-a="nutri-edit" aria-label="${_L('Параметры')}">${ico('gear','sm')}</button></div>`;
+  const onboard = T ? '' : `<div class="hud pad onboard" style="margin-top:14px"><div class="t-lbl">${ico('food')}${_L('Норма КБЖУ')}</div><h3 style="margin:6px 0 12px;font:700 18px/1.3 var(--f-disp)">${_L('Рассчитаю, сколько тебе есть')}</h3><button class="btn pri" data-a="nutri-edit">${_L('Рассчитать норму')}</button></div>`;
+  const card=`<div class="hud kcal-card"><div><div class="t-lbl">${_L('Калории')}</div><div class="kc-val num"><b>${nf.format(r0(s.kcal))}</b><small>${_L('{0} ккал', T?` / ${nf.format(T.kcal)}`:'')}</small></div><div class="meter big"><i style="width:${T?Math.min(100,s.kcal/T.kcal*100):0}%;${T&&s.kcal>T.kcal*1.1?'background:var(--warn)':''}"></i></div><div class="dim" style="font-size:13.5px">${T ? (left>=0 ? `${_L('Осталось')} <b style="color:var(--text)">${nf.format(r0(left))}</b> ${_L('ккал')}` : `${_L('Больше нормы на')} <b style="color:var(--warn)">${nf.format(r0(-left))}</b> ${_L('ккал')}`) : 'Рассчитай норму, чтобы видеть остаток'}</div></div><div class="macs">${macroBar('Белки',s.p,T&&T.p)}${P().nutriMode==='light'?'':macroBar('Жиры',s.f,T&&T.f)+macroBar('Углеводы',s.c,T&&T.c)}</div></div>`;
   const meals=MEALS.map(([k,l])=>{ const its=items.filter(x=>(x.meal||'s')===k), ms=sumFood(its);
     return `<div class="sec-h"><h2>${l}</h2><span class="aside num">${its.length?nf.format(r0(ms.kcal))+' '+_L('ккал'):''}</span></div><div class="hud list">${its.map(x=>`<div class="row"><span class="main-t"><span class="ttl">${esc(x.name)}</span><span class="sub"><span class="mono">${_L('{0} г', r0(x.g))}</span><span>${_L('{0} ккал', r0(x.kcal))}</span><span class="mono">${_L('Б {0} · Ж {1} · У {2}', r1(x.p), r1(x.f), r1(x.c))}</span></span></span><button class="btn sm icon ghost" data-a="food-del" data-id="${x.id}" aria-label="${_L('Удалить')}">${ico('x','sm')}</button></div>`).join('')}${(()=>{ if(its.length) return ''; const yi=foodItems(addDays(d,-1)).filter(x=>(x.meal||'s')===k); if(!yi.length) return ''; const ys=sumFood(yi); return `<button class="row add-row" data-a="food-repeat" data-meal="${k}">${ico('plus','sm')}<span>${_L('Как вчера: {0}{1} · {2} ккал', esc(yi.map(x=>x.name).slice(0,3).join(', ')), yi.length>3?'…':'', nf.format(r0(ys.kcal)))}</span></button>`; })()}<button class="row add-row" data-a="food-add" data-meal="${k}" data-d="${d}">${ico('plus','sm')}<span>${_L('Добавить в «{0}»', lcf(_L(l)))}</span></button></div>`; }).join('');
   let info='';
   if(T){ const n=T.n, act=ACTS[(n.activity|0)-1]||ACTS[2];
-    info=`<div class="sec-h"><h2>${_L('Твоя норма')}</h2><button class="btn sm" data-a="nutri-edit">${_L('Изменить параметры')}</button></div>
+    info=`<details class="more"><summary>${_L('Как посчитана норма')}</summary>
     <div class="stats" style="margin-top:0">${stat('Калории', nf.format(T.kcal))}${stat('Белки', T.p+' '+_L('г'))}${stat('Жиры', T.f+' '+_L('г'))}${stat('Углеводы', T.c+' '+_L('г'))}</div>
     <div class="hud pad" style="margin-top:10px"><div class="t-lbl">${_L('Как посчитано')}</div><ul class="calc">
       <li>${_L('{0}, {1} {2}, {3} см, {4} кг, {5}', n.sex==='f'?'Женщина':'Мужчина', T.a, plural(T.a,'год','года','лет'), r0(T.h), fmtW(T.w), BUILD_L[n.build]||'мезоморф')}</li>
@@ -1116,7 +1115,7 @@ function vFood(){
       <li>${_L('Белок {0} г на кг веса, жиры {1} г на кг, углеводы — остальные калории', String(T.pk).replace('.',','), String(T.fk).replace('.',','))}</li>
       <li>${_L('ИМТ {0} — {1}. Здоровый вес при твоём росте: {2}–{3} кг{4}', String(r1(T.bmi)).replace('.',','), bmiCat(T.bmi), T.lo, T.hi, T.bmi>=25?' (при большой мышечной массе ИМТ завышает)':'')}</li>
       <li>${_L('Вода: около {0} л в день', String(T.water).replace('.',','))}</li></ul>
-      <p class="muted" style="font-size:12.5px;margin:0">${_L('Это ориентир, а не медицинская рекомендация. Взвешивайся раз в неделю: если за 2–3 недели вес не двигается в нужную сторону, сдвинь калории на 150–200. Норма пересчитывается сама, когда записываешь новый вес во вкладке «Зал».')}</p></div>`; }
+      <p class="muted" style="font-size:12.5px;margin:0">${_L('Это ориентир, а не медицинская рекомендация. Взвешивайся раз в неделю: если за 2–3 недели вес не двигается в нужную сторону, сдвинь калории на 150–200. Норма пересчитывается сама, когда записываешь новый вес во вкладке «Зал».')}</p></div></details>`; }
   return head+onboard+card+meals+`<div class="sec-h"><h2>${_L('Калории · 14 дней')}</h2></div><div class="hud chart-card"><div class="chart" data-chart="kcal14"></div></div>`+info;
 }
 VIEWS.food = vFood;
@@ -1292,7 +1291,7 @@ function streakInfo(h){
 function addMin(hm, m){ const [h,mi]=hm.split(':').map(Number); const x=Math.max(0,h*60+mi+m); return pad(Math.floor(x/60))+':'+pad(x%60); }
 function nextSet(){ const w=S.draft; if(!w) return null; for(let ei=0;ei<w.exercises.length;ei++){ const ex=w.exercises[ei], si=ex.sets.findIndex(s=>!s.done); if(si>=0) return {ex, ei, si}; } return null; }
 function setView(ex, si){ const s=ex.sets[si], rec=recommend(ex.name, ex.target), ls=(lastFor(ex.name)||{sets:[]}).sets, lr=ls[si]||ls[ls.length-1];
-  const w = s.w!=='' ? s.w : (lr ? String(lr.w??'') : (rec.w!=null ? String(rec.w) : '0'));
+  const t=exInfo(ex.name).t, w = s.w!=='' ? s.w : (lr ? String(lr.w??'') : (rec.w!=null ? String(rec.w) : (t==='bb'?'20':t==='db'?'5':t==='mc'?'10':'0')));
   const rp = repsLow(ex.target); const r = s.r!=='' ? s.r : (lr ? String(lr.r) : (rp!=='повт.' ? rp : String(rec.lo)));
   return {w, r, rec}; }
 function nowList(t){
@@ -1967,6 +1966,287 @@ Object.assign(A, {
 });
 document.addEventListener('change', e=>{ const t=e.target; if(t.id==='imp-file' && t.files && t.files[0]){ importFile(t.files[0]); t.value=''; } });
 
+/* ================= v14: проще — серия и цель дня как в Duolingo, один список, зал ведёт сам ================= */
+/* ---------- XP by day, daily goal, streak, leagues, badges ---------- */
+const GOAL_DEF = 30;
+const GOALS = [[20,'Легко'],[30,'Норм'],[50,'Серьёзно'],[80,'Жёстко']];
+function goalOn(d){ const h=P().goalHist||{}; let v=null; for(const k of Object.keys(h).sort()){ if(k<=d) v=h[k]; } return clampInt(v ?? GOAL_DEF, 5, 500); }
+const LEAGUES = [{min:1,n:'Бронза',c:'#C47F3E'},{min:5,n:'Серебро',c:'#9AA7B4'},{min:10,n:'Золото',c:'#E9A800'},{min:15,n:'Сапфир',c:'#2F7DE1'},{min:20,n:'Рубин',c:'#E0245E'},{min:25,n:'Изумруд',c:'#14A86B'},{min:30,n:'Аметист',c:'#8E5BD8'},{min:40,n:'Жемчуг',c:'#BDB4A3'},{min:50,n:'Обсидиан',c:'#4A4458'},{min:70,n:'Алмаз',c:'#22BFD0'}];
+const leagueOf = L => LEAGUES.filter(x=>L>=x.min).pop() || LEAGUES[0];
+const BADGES = [
+  {id:'fire', n:'В огне', i:'flame', c:'#FF9500', d:'дней подряд', t:[3,7,14,30,100], v:s=>s.bestStreak},
+  {id:'iron', n:'Железо', i:'gym', c:'#2F7DE1', d:'тренировок', t:[1,5,15,40,100], v:s=>s.wos},
+  {id:'pr', n:'Рекордсмен', i:'trophy', c:'#E0245E', d:'рекордов', t:[1,5,15,40], v:s=>s.prs},
+  {id:'tasks', n:'Машина', i:'tasks', c:'#14A86B', d:'задач', t:[10,50,150,400], v:s=>s.tasksDone},
+  {id:'perfect', n:'Идеальный день', i:'check', c:'#8E5BD8', d:'дней на 100%', t:[1,7,30,100], v:s=>s.perfect},
+  {id:'meds', n:'По расписанию', i:'pill', c:'#22BFD0', d:'дней подряд все приёмы', t:[3,7,30,90], v:s=>s.meds7},
+  {id:'mood', n:'Наблюдатель', i:'mood', c:'#E9A800', d:'отметок состояния', t:[3,10,30,100], v:s=>s.moods},
+  {id:'food', n:'В норме', i:'food', c:'#58A700', d:'дней в норме КБЖУ', t:[3,7,30,90], v:s=>s.kbju},
+  {id:'xp', n:'Опыт', i:'bolt', c:'#C47F3E', d:'XP всего', t:[500,2000,5000,15000,40000], v:s=>s.xp}
+];
+function badgeTier(b, st){ const v=Math.max(0, b.v(st)||0); let k=0; while(k<b.t.length && v>=b.t[k]) k++; return {v, k, next: k<b.t.length ? b.t[k] : null, prev: k ? b.t[k-1] : 0}; }
+const doneDay = x => { if(x.doneAt){ const dt=new Date(x.doneAt); if(!isNaN(dt)) return ymd(dt); } return x.date; };
+function xpByDay(){
+  const m=new Map(), add=(d,v)=>{ if(d && v) m.set(d,(m.get(d)||0)+v); };
+  for(const x of S.cols.tasks.values()) if(x.done) add(doneDay(x), 10+([0,3,6,10][x.prio|0]||0));
+  const allH=[...S.cols.habits.values()], TG=targets();
+  for(const d of new Set([...S.cols.logs.keys(), ...D.woDates])){ const l=logOf(d); let v=0; for(const h of allH){ const n=hv(h,d); if(h.bad) v-=5*n; else if(n>=(h.target||1)) v+=5; } v+=2*Object.values(l.m||{}).filter(Boolean).length; if(l.mood) v+=3; add(d,v); }
+  for(const w of D.wos) add(w.date, 50+20*((D.woPR[w.id]||[]).length));
+  for(const [d,fd] of S.cols.food){ const it=(fd&&fd.items)||[]; if(!it.length) continue; let v=2; if(TG){ const sm=sumFood(it); if(Math.abs(sm.kcal-TG.kcal)<=TG.kcal*.1 && sm.p>=TG.p*.9) v+=10; } add(d,v); }
+  return m;
+}
+/* a day counts when its XP reaches the goal; every 7 days in a row earns a freeze (max 2) that saves one missed day */
+function goalStreak(xd){
+  const t=todayStr(); let s=0, best=0, fr=0, d=startDate(); const met=new Set(), frozen=new Set();
+  for(let i=0; d<t && i<2000; d=addDays(d,1), i++){
+    if((xd.get(d)||0)>=goalOn(d)){ met.add(d); s++; if(s%7===0) fr=Math.min(2,fr+1); }
+    else if(s>0 && fr>0){ fr--; frozen.add(d); }
+    else s=0;
+    best=Math.max(best,s);
+  }
+  const tx=Math.max(0, xd.get(t)||0), tg=goalOn(t), today=tx>=tg;
+  if(today){ met.add(t); s++; best=Math.max(best,s); }
+  return {s, best, fr, today, tx, tg, met, frozen};
+}
+let B14=null;
+const _derive13 = derive;
+derive = function(){
+  _derive13();
+  const xd=xpByDay(), g=goalStreak(xd); D.xpDay=xd; D.gs=g; D.league=leagueOf(D.level);
+  D.st.bestStreak=g.best; D.st.xp=D.xp;
+  D.tiers={}; for(const b of BADGES) D.tiers[b.id]=badgeTier(b, D.st);
+  if(S.ready.size!==COLS.length) return;
+  const cur={day:todayStr(), today:g.today, level:D.level, tiers:Object.fromEntries(BADGES.map(b=>[b.id, D.tiers[b.id].k]))};
+  if(B14 && B14.day===cur.day){
+    if(cur.today && !B14.today) celebrate14('goal');
+    else if(cur.level>B14.level) celebrate14('level');
+    for(const b of BADGES) if(cur.tiers[b.id]>B14.tiers[b.id]) toast(`<b>${_L('Новый значок: «{0}»', esc(_L(b.n)))}</b>${_L('Уровень {0} · {1} {2}', cur.tiers[b.id], b.t[cur.tiers[b.id]-1], _L(b.d))}`,'big');
+  }
+  B14=cur;
+};
+function celebrate14(kind){ const go=()=>{ openModal('cele',{kind}); setTimeout(()=>{ buzz(30); burst($('#modal .cele-art')); }, 260); };
+  if(S.modal){ S.celeQ=kind; return; } setTimeout(()=>{ if(S.modal){ S.celeQ=kind; return; } go(); }, 380); }
+const _closeModal13 = closeModal;
+closeModal = function(instant){ _closeModal13(instant); if(S.celeQ && !S.modal){ const k=S.celeQ; S.celeQ=null; setTimeout(()=>{ if(!S.modal) celebrate14(k); }, 320); } };
+
+/* ---------- small pieces of UI ---------- */
+const flameSvg = (on, cls='flm') => `<svg class="${cls} ${on?'on':''}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a7 7 0 0 0 7-7c0-5-3.8-7.3-5.2-12.3C11.5 4.9 10.6 7 10.6 9.5 9.2 8.6 8.6 7.3 8.3 6 6.6 8 5 10.6 5 15a7 7 0 0 0 7 7z" class="f1"/><path d="M12 21.2a3.2 3.2 0 0 0 3.2-3.2c0-2.4-1.9-3.4-2.4-5.6-1.1 1.1-1.7 2.3-1.7 3.7-.6-.4-1-1.1-1.1-1.6-.8 1-1.2 2.1-1.2 3.5a3.2 3.2 0 0 0 3.2 3.2z" class="f2"/></svg>`;
+const gemSvg = (c, cls='gem') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.3 2.8h11.4L22.4 9 12 21.6 1.6 9z" fill="${c}"/><path d="M1.6 9L6.3 2.8 8.8 9z" fill="#fff" opacity=".34"/><path d="M8.8 9l3.2-6.2L15.2 9z" fill="#fff" opacity=".22"/><path d="M12 21.6L15.2 9h7.2z" fill="#000" opacity=".16"/><path d="M8.8 9L12 21.6 1.6 9z" fill="#fff" opacity=".12"/><path d="M1.6 9h20.8" stroke="#fff" stroke-width=".8" opacity=".45"/></svg>`;
+function pageTitle(){ if(S.tab==='gym' && S.draft) return 'Тренировка'; return {home:'Сегодня', tasks:'План', habits:'План', gym:'Тело', food:'Тело', progress:'Прогресс'}[S.tab] || 'Сегодня'; }
+function chips14(){
+  const g=D.gs||{s:0,tx:0,tg:GOAL_DEF,today:false}, pct=Math.min(1, g.tx/(g.tg||1)), C=2*Math.PI*14;
+  const sc=$('#streak-chip'); if(sc){ const h=`<svg viewBox="0 0 34 34" class="sr" aria-hidden="true"><circle cx="17" cy="17" r="14" class="sr-t"/><circle cx="17" cy="17" r="14" class="sr-b ${g.today?'full':''}" stroke-dasharray="${(C*pct).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 17 17)"/></svg>${flameSvg(g.today)}<b class="num">${g.s}</b>`;
+    if(sc.__h!==h){ sc.innerHTML=h; sc.__h=h; } sc.setAttribute('aria-label', _L('Серия {0} · сегодня {1} из {2} XP', g.s, g.tx, g.tg)); sc.classList.toggle('lit', g.today); }
+  const lc=$('#lvl-chip'); if(lc){ const lg=D.league||LEAGUES[0], h=`${gemSvg(lg.c)}<b class="num">${D.level}</b>`; if(lc.__h!==h){ lc.innerHTML=h; lc.__h=h; } lc.setAttribute('aria-label', _L('Уровень {0} · лига «{1}»', D.level, _L(lg.n))); }
+}
+let tapXY=null, tapAt=0;
+document.addEventListener('pointerdown', e=>{ tapXY=[e.clientX, e.clientY]; tapAt=Date.now(); }, true);
+xpPop = function(n){ if(!(n>0)) return; const el=document.createElement('div'); el.className='xpf'; el.textContent='+'+n+' XP';
+  let x, y; if(tapXY && Date.now()-tapAt<2500){ [x,y]=tapXY; } else { const c=$('#streak-chip'), r=c?c.getBoundingClientRect():{left:innerWidth-90,top:30,width:40,height:30}; x=r.left+r.width/2; y=r.top+r.height+6; }
+  el.style.left=Math.max(40, Math.min(innerWidth-40, x))+'px'; el.style.top=Math.max(30, y-10)+'px'; document.body.appendChild(el); setTimeout(()=>el.remove(), 1300);
+  const c=$('#streak-chip'); if(c){ c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); } };
+function week7(){ const t=todayStr(), g=D.gs||{met:new Set(), frozen:new Set()}, mon=addDays(t, 1-wdOf(t)); let h='<div class="wk7">';
+  for(let i=0;i<7;i++){ const d=addDays(mon,i), st = g.met.has(d) ? 'met' : g.frozen.has(d) ? 'ice' : d===t ? 'td' : d<t ? 'miss' : 'fut';
+    h+=`<div class="w7 s-${st}"><span>${WD[i]}</span><i>${st==='met'?ico('check'):st==='ice'?ico('snow'):''}</i></div>`; }
+  return h+'</div>'; }
+
+/* ---------- celebration sheet ---------- */
+MODALS.cele = function(m){ const g=D.gs, lg=D.league||LEAGUES[0];
+  if(m.kind==='level'){ const prev=leagueOf(D.level-1), newL=prev.n!==lg.n;
+    return `<div class="cele"><div class="cele-art">${gemSvg(lg.c,'cele-gem')}<b class="num">${D.level}</b></div><h2>${_L('Уровень {0}!', D.level)}</h2><p>${newL?_L('Новая лига — «{0}»', esc(_L(lg.n))):_L('Лига «{0}»', esc(_L(lg.n)))}</p><button class="btn go big" type="button" data-a="close">${_L('Дальше')}</button></div>`; }
+  return `<div class="cele"><div class="cele-art">${flameSvg(true,'flm big')}<b class="num">${g.s}</b></div><h2>${g.s>1?_L('{0} {1} подряд!', g.s, plural(g.s,'день','дня','дней')):_L('Серия началась!')}</h2><p>${_L('Цель дня выполнена · {0} XP', g.tx)}</p>${week7()}<button class="btn go big" type="button" data-a="close">${_L('Дальше')}</button></div>`; };
+
+/* ---------- «Сегодня»: one list ---------- */
+function homeItems(t){
+  const it=[], H=new Date().getHours(), l=logOf(t);
+  for(const x of dosesOn(t)) it.push({time:x.time, o:1, done:x.taken, html:`<button class="chk ${x.taken?'on':''}" data-a="med-toggle" data-k="${esc(x.key)}" aria-label="${_L('Принял')}">${ico('check')}</button><button class="main-t" data-a="edit-med" data-id="${x.med.id}"><span class="ttl">${esc(x.med.name)}</span>${x.med.dose?`<span class="sub"><span>${esc(x.med.dose)}</span></span>`:''}</button><span class="k-ico">${ico('pill','sm')}</span>`});
+  for(const x of tasksOn(t)) it.push({time:x.time||'', o:2, p:x.prio|0, done:!!x.done, sw: x.done?'':`data-swl="task-later" data-swl-id="${x.id}" data-swl-t="${x.time?_L('Через час'):_L('Завтра')}"`, html:`<button class="chk ${x.done?'on':''}" data-a="toggle-task" data-id="${x.id}" aria-label="${_L('Готово')}">${ico('check')}</button><button class="main-t" data-a="edit-task" data-id="${x.id}"><span class="ttl">${esc(x.title)}</span></button>${x.prio?`<span class="prio p${x.prio}">${'!'.repeat(x.prio)}</span>`:''}`});
+  const day=planDayFor(t), gd=D.woDates.has(t);
+  if(day || gd || S.draft){ const nm = S.draft ? S.draft.name : gd ? (D.wos.filter(w=>w.date===t).pop()||{}).name : day.name;
+    const btn = gd ? `<span class="chk on">${ico('check')}</span>` : `<span class="chk gym">${ico('gym','sm')}</span>`;
+    const act = gd ? '' : S.draft ? `<button class="btn sm go" data-a="tab" data-tab="gym">${_L('Продолжить')}</button>` : `<button class="btn sm go" data-a="gym-start" data-id="${day.id}">${_L('Начать')}</button>`;
+    it.push({time:'', o:0, done:gd, html:`${btn}<button class="main-t" data-a="tab" data-tab="gym"><span class="ttl">${_L('Зал: {0}', esc(_L(nm||'')))}</span></button>${act}`}); }
+  for(const h of habitsAll()){ if(!scheduled(h,t)||skipped(h,t)||h.bad||h.link==='gym') continue; const dn=isDone(h,t), cnt=h.kind==='count'||h.kind==='time';
+    it.push({time:'', o:4, done:dn, sw:`data-swl="habit-skip" data-swl-id="${h.id}" data-swl-t="${_L('Пропустить')}"`, html:`<button class="chk ${dn?'on':''}" data-a="habit-fill" data-id="${h.id}" aria-label="${_L('Отметить')}">${ico('check')}</button><button class="main-t" data-a="habit-open" data-id="${h.id}"><span class="ttl">${esc(h.name)}</span>${cnt?`<span class="sub"><span class="num">${esc(progText(h,t))}</span></span>`:''}</button>${cnt&&!dn?`<button class="btn sm icon ghost" data-a="habit-inc" data-id="${h.id}" data-v="${h.kind==='time'?(h.target>=30?10:5):1}" aria-label="${_L('Больше')}">${ico('plus','sm')}</button>`:''}<span class="k-ico">${habitIco(h)}</span>`}); }
+  const TG=targets();
+  if(TG){ const fs=sumFood(foodItems(t)); it.push({time:'', o:5, done:false, html:`<button class="chk" data-a="food-add" aria-label="${_L('Записать еду')}">${ico('plus','sm')}</button><button class="main-t" data-a="tab" data-tab="food"><span class="ttl">${_L('Еда')}</span><span class="sub"><span class="num">${_L('{0} из {1} ккал', nf.format(r0(fs.kcal)), nf.format(TG.kcal))}</span></span></button><span class="k-ico">${ico('food','sm')}</span>`}); }
+  if(H<12 && !(num(l.sleep)>0)) it.push({time:'', o:6, done:false, html:`<button class="chk" data-a="mood-open" aria-label="${_L('Сон')}">${ico('plus','sm')}</button><button class="main-t" data-a="mood-open"><span class="ttl">${_L('Как спал?')}</span></button><span class="k-ico">${ico('mood','sm')}</span>`});
+  if(H>=18 || l.mood) it.push({time:'', o:7, done:!!l.mood, html:`<button class="chk ${l.mood?'on':''}" data-a="mood-open" aria-label="${_L('Закрыть день')}">${ico(l.mood?'check':'plus','sm')}</button><button class="main-t" data-a="mood-open"><span class="ttl">${_L('Закрыть день')}</span><span class="sub"><span>${l.mood?esc(_L(MOOD[l.mood]||'')):_L('настроение и сон')}</span></span></button><span class="k-ico">${ico('mood','sm')}</span>`});
+  return it.sort((a,b)=> (a.time||'99:99').localeCompare(b.time||'99:99') || (a.o-b.o) || ((b.p||0)-(a.p||0)));
+}
+const rowH = i => `<div class="row ${i.done?'done':''}" ${i.sw||''}><span class="time ${i.time?'':'none'}">${i.time||''}</span>${i.html}</div>`;
+function vHome14(){
+  const t=todayStr(); if(isLoading()) return `<div class="skel-wrap">${SKEL(3)}</div>`;
+  const st=dayStats(t), pct=st.total?Math.round(st.done/st.total*100):0, od=overdue(), items=homeItems(t), open=items.filter(i=>!i.done), done=items.filter(i=>i.done);
+  let h=`<div class="hm-bar"><div class="pbar"><i style="width:${pct}%"></i></div><span class="num">${st.done}/${st.total}</span></div>`;
+  if(setupNeeded()) h+=`<div class="hud nudge"><span class="nd-i">${ico('spark')}</span><span class="nd-t"><b>${_L('Настроить под себя')}</b><small>${_L('1 минута')}</small></span><button class="btn sm pri" data-a="setup">${_L('Начать')}</button><button class="icon-btn" data-a="setup-later" aria-label="${_L('Позже')}">${ico('x','sm')}</button></div>`;
+  if(od.length) h+=`<div class="hud nudge warn"><span class="nd-t"><b>${_L('Просрочено: {0}', od.length)}</b></span><button class="btn sm" data-a="carry">${_L('На сегодня')}</button></div>`;
+  h+= open.length ? `<div class="hud list hl">${open.map(rowH).join('')}</div>` : `<div class="hud allok">${flameSvg(true,'flm mid')}<b>${_L('Всё сделано!')}</b></div>`;
+  if(done.length) h+=`<div class="sec-h small"><h2>${_L('Сделано')}</h2><span class="aside num">${done.length}</span></div><div class="hud list hl dim-list">${done.map(rowH).join('')}</div>`;
+  h+=`<button class="btn add-wide" data-a="add-open">${ico('plus','sm')}${_L('Добавить')}</button>`;
+  return h;
+}
+VIEWS.home = vHome14;
+
+/* ---------- quick add (the + in the middle) ---------- */
+MODALS.quick = function(){ const ai = sample && !S.aiOff;
+  const qs=[['new-task','tasks','Задача','#2F7DE1'],['new-habit','habits','Привычка','#FF9500'],['new-med','pill','Таблетка','#22BFD0'],['food-add','food','Еда','#58A700'],['mood-open','mood','Состояние','#E9A800'],['fab-gym','gym','Тренировка','#E0245E']];
+  return `<h3>${_L('Добавить')}</h3><div class="quick q14">${qs.map(([a,i,l,c])=>`<button class="qa" type="button" data-a="${a}" style="--qc:${c}"><span class="qi">${ico(i)}</span><span>${_L(l)}</span></button>`).join('')}</div>${ai?`<button class="btn wide" type="button" data-a="core-open">${ico('spark','sm')}${_L('Спросить {0}', esc(P().ai))}</button>`:''}`; };
+
+/* ---------- «Тело» → Зал ---------- */
+const COMPOUND = new Set(['Приседания со штангой','Жим штанги лёжа','Становая тяга','Румынская тяга','Тяга штанги в наклоне','Жим штанги стоя','Жим ногами','Подтягивания','Отжимания на брусьях']);
+function recShort(name, target){ const r=recommend(name, target), [lo,hi]=repRange(target, name), n=(String(target).match(/^(\d+)/)||[])[1]||3, reps=lo===hi?lo:lo+'–'+hi, e=exInfo(name);
+  if(e.t==='cardio') return _L('{0}–{1} мин', lo, hi);
+  return (r.w>0 ? fmtW(r.w)+' '+_L('кг')+' · ' : '')+n+'×'+reps; }
+function woMinutes(day){ const sets=(day.ex||[]).reduce((a,e)=>a+(Number(e.sets)||3),0); return Math.max(15, Math.round((sets*((P().rest||90)+40))/60/5)*5); }
+function vGym14(){
+  if(S.draft) return S.woList ? vWorkout() : vWork14();
+  const t=todayStr(), pl=PLAN(), day=planDayFor(t), doneT=D.woDates.has(t), nx=nextPlanDay(t);
+  let card;
+  if(!pl.days.length) card=`<div class="hud gcard"><div class="g-ico">${ico('gym')}</div><h2>${_L('Программы пока нет')}</h2><p>${_L('3 вопроса — и я соберу программу с весами.')}</p><button class="btn go big" data-a="prog-wiz">${_L('Подобрать программу')}</button></div>`;
+  else if(day && !doneT){ const exs=day.ex||[];
+    card=`<div class="hud gcard"><div class="g-lbl">${_L('Сегодня')} · ${esc(WDL[wdOf(t)-1])}</div><h2>${esc(_L(day.name))}</h2><p>${exs.length} ${plural(exs.length,'упражнение','упражнения','упражнений')} · ~${woMinutes(day)} ${_L('мин')}</p>
+    <div class="g-list">${exs.map(e=>`<button class="g-ex" data-a="ex-view" data-n="${esc(e.name)}"><span>${esc(_L(e.name))}</span><b class="num">${esc(recShort(e.name, `${e.sets}×${e.reps}`))}</b></button>`).join('')}</div>
+    <button class="btn go big" data-a="gym-start" data-id="${day.id}">${ico('play','sm')}${_L('Начать тренировку')}</button></div>`; }
+  else card=`<div class="hud gcard rest-c"><div class="g-ico">${doneT?ico('check'):'😌'}</div><h2>${doneT?_L('Сегодня — готово'):_L('Сегодня отдых')}</h2>${nx?`<p>${_L('Следующая: {0} · {1}', esc(WDL[wdOf(nx.date)-1]), esc(_L(nx.day.name)))}</p>`:''}<button class="btn sm" data-a="gym-choose">${doneT?_L('Ещё тренировка'):_L('Всё равно потренироваться')}</button></div>`;
+  const prog = pl.days.length ? `<div class="sec-h"><h2>${_L('Программа')}</h2><button class="btn sm ghost" data-a="prog-wiz">${_L('Подобрать заново')}</button></div>
+    ${Array.isArray(pl.prev)?`<div class="hud nudge"><span class="nd-t"><b>${_L('Программа обновлена')}</b></span><button class="btn sm" data-a="plan-undo">${_L('Вернуть прежнюю')}</button><button class="icon-btn" data-a="plan-keep" aria-label="${_L('Оставить')}">${ico('x','sm')}</button></div>`:''}
+    <div class="hud list">${pl.days.map(d=>`<button class="row" data-a="plan-edit" data-id="${d.id}"><span class="wdays num">${(d.wd||[]).length?(d.wd||[]).map(x=>WD[x-1]).join(' '):'—'}</span><span class="main-t"><span class="ttl">${esc(_L(d.name))}</span><span class="sub"><span>${(d.ex||[]).length} ${plural((d.ex||[]).length,'упражнение','упражнения','упражнений')}</span></span></span>${ico('right','sm')}</button>`).join('')}</div>
+    <div class="btns" style="margin-top:8px"><button class="btn sm ghost" data-a="plan-edit" data-id="">${ico('plus','sm')}${_L('День')}</button></div>` : '';
+  const mine=myExercises().filter(x=>D.exHist[x.name] || (EXW()[x.name]&&EXW()[x.name].w!==''));
+  const showAll=!!S.wAll, list=showAll?mine:mine.slice(0,5);
+  const weights = mine.length ? `<div class="sec-h"><h2>${_L('Мои веса')}</h2>${mine.length>5?`<button class="btn sm ghost" data-a="w-all">${showAll?_L('Свернуть'):_L('Все · {0}', mine.length)}</button>`:''}</div><div class="hud list">${list.map(x=>{ const last=lastFor(x.name), top=last?last.sets.reduce((a,s)=>setMetric(s)>setMetric(a)?s:a, last.sets[0]):null, mw=EXW()[x.name], rec=recommend(x.name, planTarget(x.name));
+      const now = top ? (num(top.w)>0?fmtW(top.w)+'×'+top.r:'×'+top.r) : (mw&&mw.w!==''?fmtW(mw.w)+(mw.r?'×'+mw.r:''):'—'), nxt = rec.w>0 && (!top || Math.abs(rec.w-(num(top.w)||0))>1e-6) ? `<span class="up">${ico('up','sm')}${esc(fmtW(rec.w))}</span>` : '';
+      return `<button class="row" data-a="ex-view" data-n="${esc(x.name)}"><span class="main-t"><span class="ttl">${esc(_L(x.name))}</span></span><span class="wv num">${esc(now)}</span>${nxt}</button>`; }).join('')}</div>` : '';
+  const bw=BODY(), bwk=Object.keys(bw).sort(), lastBw=bwk.length?bw[bwk[bwk.length-1]]:null;
+  const body=`<div class="sec-h"><h2>${_L('Вес тела')}</h2>${lastBw?`<span class="aside num">${esc(fmtW(lastBw))} ${_L('кг')}</span>`:''}</div><div class="hud pad"><form class="addbar" data-f="body" style="margin:0"><input class="inp" id="bw-in" inputmode="decimal" placeholder="${_L('Вес сегодня, кг')}" aria-label="${_L('Вес, кг')}"><button class="btn" type="submit">${_L('Записать')}</button></form>${bwk.length>=2?'<div class="chart" data-chart="body" style="margin-top:10px"></div>':''}</div>`;
+  const hist=D.wos.slice(-5).reverse();
+  const hh = hist.length ? `<div class="sec-h"><h2>${_L('История')}</h2><span class="aside num">${D.wos.length}</span></div><div class="hud list">${hist.map(w=>{ const dur=w.finishedAt&&w.startedAt?(Date.parse(w.finishedAt)-Date.parse(w.startedAt))/6e4:0, prs=(D.woPR[w.id]||[]).length; return `<button class="row" data-a="wo-open" data-id="${w.id}"><span class="time">${esc(shortDate(w.date))}</span><span class="main-t"><span class="ttl">${esc(_L(w.name||'Тренировка'))}</span><span class="sub"><span>${fmtDur(dur)}</span>${prs?`<span class="tag acc">${ico('trophy','sm')}${prs}</span>`:''}</span></span></button>`; }).join('')}</div>` : '';
+  return card+prog+weights+body+hh;
+}
+VIEWS.gym = () => (S.draft ? '' : subnav('body')) + vGym14();
+
+/* program wizard: goal, days a week, experience, body weight */
+const PROG = {
+  2:[['Всё тело A',['Приседания со штангой','Жим штанги лёжа','Тяга верхнего блока','Жим гантелей сидя','Скручивания']],['Всё тело B',['Румынская тяга','Жим гантелей на наклонной','Тяга штанги в наклоне','Выпады','Подъём штанги на бицепс','Планка']]],
+  '3new':[['Всё тело A',['Приседания со штангой','Жим штанги лёжа','Тяга верхнего блока','Махи в стороны','Скручивания']],['Всё тело B',['Румынская тяга','Жим гантелей сидя','Тяга штанги в наклоне','Отжимания на брусьях','Планка']],['Всё тело C',['Жим ногами','Жим гантелей на наклонной','Горизонтальная тяга блока','Подъём гантелей на бицепс','Разгибания на блоке']]],
+  3:[['Грудь + трицепс',['Жим штанги лёжа','Жим гантелей на наклонной','Отжимания на брусьях','Французский жим','Разгибания на блоке']],['Спина + бицепс',['Подтягивания','Тяга штанги в наклоне','Тяга верхнего блока','Подъём штанги на бицепс','Молотки']],['Ноги + плечи',['Приседания со штангой','Румынская тяга','Жим ногами','Жим гантелей сидя','Махи в стороны']]],
+  4:[['Верх A',['Жим штанги лёжа','Тяга штанги в наклоне','Жим гантелей сидя','Тяга верхнего блока','Подъём штанги на бицепс','Разгибания на блоке']],['Низ A',['Приседания со штангой','Румынская тяга','Выпады','Подъём на носки','Скручивания']],['Верх B',['Жим гантелей на наклонной','Подтягивания','Махи в стороны','Горизонтальная тяга блока','Молотки','Французский жим']],['Низ B',['Становая тяга','Жим ногами','Сгибания ног','Разгибания ног','Планка']]]
+};
+const PROG_WD = {2:[[1],[4]], 3:[[1],[3],[5]], 4:[[1],[2],[4],[5]]};
+function buildProgram(goal, days, exp){
+  const tpl = days===3 && exp==='new' ? PROG['3new'] : PROG[days] || PROG[3];
+  return tpl.map(([name, list], i)=>({id:uid(), name, wd:PROG_WD[days][i], ex:list.map(n=>{ const c=COMPOUND.has(n), t=exInfo(n).t;
+    let reps = goal==='str' ? (c?'4-6':'8-10') : goal==='fit' ? (c?'10-12':'12-15') : (c?'6-10':'10-12');
+    if(t==='bw') reps = n==='Планка' ? '30-60' : n==='Подтягивания' ? (goal==='fit'?'8-12':'5-10') : '8-15';
+    const sets = c && exp!=='new' ? 4 : 3;
+    return {name:n, muscle:exInfo(n).m||muscleOf(n), sets, reps}; })}));
+}
+MODALS.progWiz = function(){ const lw=latestWeight();
+  return `<h3>${_L('Подберу программу')}</h3><form class="form" data-f="prog-wiz" autocomplete="off">
+  <div class="fld"><span>${_L('Цель')}</span>${segHtml('pg', 'mass', [['mass',_L('Мышцы')],['str',_L('Сила')],['fit',_L('Форма')]], 'full')}</div>
+  <div class="fld"><span>${_L('Тренировок в неделю')}</span>${segHtml('pd', 3, [[2,'2'],[3,'3'],[4,'4']], 'full')}</div>
+  <div class="fld"><span>${_L('Опыт')}</span>${segHtml('px', 'new', [['new',_L('Новичок')],['mid',_L('Уже занимаюсь')]], 'full')}</div>
+  <label class="fld"><span>${_L('Твой вес, кг')}</span><input class="inp" id="pw-w" inputmode="decimal" value="${lw>0?esc(fmtW(lw)):''}" placeholder="75"></label>
+  <div class="actions"><button class="btn" type="button" data-a="close">${_L('Отмена')}</button><button class="btn go" type="submit">${_L('Собрать')}</button></div></form>`; };
+FORMS['prog-wiz'] = function(f){
+  const goal=segVal(f,'pg')||'mass', days=+segVal(f,'pd')||3, exp=segVal(f,'px')||'new', w=num(($('#pw-w')||{}).value), t=todayStr();
+  const old=PLAN().days.filter(d=>!PLAN().demo).map(clone);
+  Store.set('meta','plan',{days:buildProgram(goal, days, exp), ...(old.length?{prev:old}:{})});
+  if(w>25 && w<300) Store.merge('meta','body',{w:{[t]:String(r1(w))}});
+  Store.merge('meta','profile',{rest: goal==='str'?150:goal==='fit'?60:90});
+  closeModal(); S.tab='gym'; render(true); window.scrollTo({top:0});
+  toast(`<b>${_L('Программа готова')}</b>${_L('{0} {1} в неделю', days, plural(days,'тренировка','тренировки','тренировок'))}`,'big');
+};
+MODALS.gymChoose = function(){ const pl=PLAN();
+  return `<h3>${_L('Какую тренировку?')}</h3><div class="hud list">${pl.days.map(d=>`<button class="row" data-a="gym-start" data-id="${d.id}"><span class="main-t"><span class="ttl">${esc(_L(d.name))}</span><span class="sub"><span>${(d.ex||[]).length} ${plural((d.ex||[]).length,'упражнение','упражнения','упражнений')}</span></span></span>${ico('play','sm')}</button>`).join('')}<button class="row" data-a="gym-start" data-id=""><span class="main-t"><span class="ttl">${_L('Свободная')}</span><span class="sub"><span>${_L('выберешь упражнения сам')}</span></span></span>${ico('plus','sm')}</button></div>`; };
+
+/* ---------- workout: one exercise at a time ---------- */
+function curFx(){ const w=S.draft; if(!w || !w.exercises.length) return -1; if(S.fx!=null && S.fx>=0 && S.fx<w.exercises.length) return S.fx; const i=w.exercises.findIndex(ex=>ex.sets.some(s=>!s.done)); return i>=0 ? i : w.exercises.length-1; }
+function nextUndone(from){ const w=S.draft; if(!w) return -1; const n=w.exercises.length; for(let k=1;k<=n;k++){ const i=(from+k)%n; if(w.exercises[i].sets.some(s=>!s.done)) return i; } return -1; }
+function vWork14(){
+  const w=S.draft, el=(Date.now()-Date.parse(w.startedAt))/1000, N=w.exercises.length, i=curFx();
+  const top=`<div class="wk-top"><button class="icon-btn" data-a="wo-menu" aria-label="${_L('Меню тренировки')}">${ico('list')}</button><div class="wk-tt"><b>${esc(_L(w.name||'Свободная тренировка'))}</b><span class="num" data-elapsed>${fmtClock(el)}</span></div><button class="btn sm" data-a="wo-finish">${_L('Завершить')}</button></div>`;
+  const dots=`<div class="wk-dots">${w.exercises.map((ex,k)=>`<button class="${ex.sets.length&&ex.sets.every(s=>s.done)?'dn':''} ${k===i?'cur':''}" data-a="wo-go" data-e="${k}" aria-label="${esc(_L(ex.name))}"></button>`).join('')}</div>`;
+  if(!N) return top+`<div class="hud wk-card"><h2 class="wk-name">${_L('Добавь упражнение')}</h2><button class="btn go big" data-a="wo-add-ex">${ico('plus','sm')}${_L('Упражнение')}</button></div>`;
+  if(w.exercises.every(ex=>ex.sets.every(s=>s.done))){ const sets=w.exercises.reduce((a,ex)=>a+ex.sets.length,0);
+    return top+dots+`<div class="hud wk-card wk-fin"><div class="cele-art">${flameSvg(true,'flm big')}</div><h2 class="wk-name">${_L('Всё сделано!')}</h2><p class="wk-sub">${_L('{0} {1} · {2}', sets, plural(sets,'подход','подхода','подходов'), fmtClock(el))}</p><button class="btn go big" data-a="wo-finish">${ico('check','sm')}${_L('Завершить тренировку')}</button><div class="wk-nav"><button class="btn sm ghost" data-a="wo-add-ex">${ico('plus','sm')}${_L('Упражнение')}</button><button class="btn sm ghost" data-a="wo-add-set" data-e="${i}">${ico('plus','sm')}${_L('Подход')}</button></div></div>`; }
+  const ex=w.exercises[i], si=ex.sets.findIndex(s=>!s.done), e=exInfo(ex.name);
+  const chips=ex.sets.map((s,k)=>`<span class="sc ${s.done?'dn':''} ${k===si?'cur':''}">${s.done?`${num(s.w)>0?esc(fmtW(s.w))+'×':''}${esc(s.r)}`:(k+1)}</span>`).join('');
+  let body;
+  if(si<0){ const nx=nextUndone(i);
+    body=`<div class="wk-ok">${ico('check')}<b>${_L('Упражнение готово')}</b></div>${nx>=0?`<button class="btn go big" data-a="wo-go" data-e="${nx}">${_L('Дальше: {0}', esc(_L(w.exercises[nx].name)))}</button>`:''}<button class="btn ghost wide" data-a="wo-add-set" data-e="${i}">${ico('plus','sm')}${_L('Ещё подход')}</button>`; }
+  else { const v=setView(ex, si), cardio=e.t==='cardio', bw=e.t==='bw' && !(num(v.w)>0), inc=e.inc||2.5;
+    const step=(k,d,lbl)=>`<button class="stp-b" data-a="f-adj" data-e="${i}" data-s="${si}" data-k="${k}" data-v="${d}" aria-label="${lbl}">${ico(d<0?'minus':'plus')}</button>`;
+    const wBox=(cardio||bw)?'':`<div class="stp">${step('w',-inc,_L('Меньше вес'))}<div class="stp-v"><b class="num">${esc(fmtW(v.w))}</b><span>${_L('кг')}${e.t==='db'?' · '+_L('гантель'):''}</span></div>${step('w',inc,_L('Больше вес'))}</div>`;
+    const rBox=`<div class="stp">${step('r',-1,_L('Меньше'))}<div class="stp-v"><b class="num">${esc(v.r)}</b><span>${cardio?_L('мин'):bw?_L('раз · свой вес'):_L('раз')}</span></div>${step('r',1,_L('Больше'))}</div>`;
+    const ld=ex.sets.map((x,k)=>x.done?k:-1).filter(k=>k>=0).pop(), adv=ld!=null?setAdvice(ex,ld):null;
+    const hint = adv ? adv.txt : (!lastFor(ex.name) && si===0 && !cardio && !bw) ? _L('Первый раз — если тяжело, сбавь вес') : '';
+    const pt = (!cardio && !bw) ? platesText(ex.name, num(v.w)) : '';
+    body=`<div class="wk-steps">${wBox}${rBox}</div>${hint?`<div class="wk-hint">${esc(hint)}</div>`:''}${pt?`<div class="wk-hint muted">${esc(pt)}</div>`:''}<button class="btn go big" data-a="wo-set" data-e="${i}" data-s="${si}">${ico('check','sm')}${_L('Подход сделан')}</button>`; }
+  const card=`<div class="hud wk-card"><div class="wk-sub">${_L('Упражнение {0} из {1}', i+1, N)}${ex.muscle?' · '+esc(_L(ex.muscle)):''}</div><h2 class="wk-name">${esc(_L(ex.name))}</h2>${si>=0?`<div class="wk-set">${_L('Подход {0} из {1}', si+1, ex.sets.length)}</div>`:''}<div class="wk-chips">${chips}</div>${body}
+    <div class="wk-nav"><button class="btn sm ghost" data-a="wo-go" data-e="${i-1}" ${i<=0?'disabled':''} aria-label="${_L('Назад')}">${ico('left','sm')}</button><button class="btn sm ghost" data-a="tech" data-n="${esc(ex.name)}">${ico('video','sm')}${S.techOpen.has(ex.name)?_L('Скрыть'):_L('Как делать')}</button><button class="btn sm ghost" data-a="wo-go" data-e="${i+1}" ${i>=N-1?'disabled':''} aria-label="${_L('Дальше')}">${ico('right','sm')}</button></div>
+    ${S.techOpen.has(ex.name)?techHtml(ex.name):''}</div>`;
+  const nx=w.exercises[i+1];
+  return top+dots+card+(nx&&si>=0?`<div class="wk-next">${_L('Потом: {0}', esc(_L(nx.name)))}</div>`:'');
+}
+MODALS.woMenu = function(){ const w=S.draft; if(!w) return `<h3>${_L('Тренировка')}</h3>`; const i=curFx();
+  return `<h3>${esc(_L(w.name||'Тренировка'))}</h3><div class="hud list">${w.exercises.map((ex,k)=>{ const d=ex.sets.filter(s=>s.done).length, all=ex.sets.length&&d===ex.sets.length; return `<button class="row ${all?'done':''}" data-a="wo-go" data-e="${k}"><span class="chk ${all?'on':''}">${all?ico('check'):`<small class="num">${k+1}</small>`}</span><span class="main-t"><span class="ttl">${esc(_L(ex.name))}</span><span class="sub"><span class="num">${d}/${ex.sets.length}</span></span></span>${k===i?ico('left','sm'):''}</button>`; }).join('')}</div>
+  <div class="btns" style="margin-top:12px"><button class="btn" type="button" data-a="wo-add-ex">${ico('plus','sm')}${_L('Упражнение')}</button><button class="btn" type="button" data-a="wo-list">${ico('list','sm')}${_L('Все подходы списком')}</button></div>
+  <div class="actions"><button class="btn danger" type="button" data-a="wo-del-ex" data-e="${i}" data-confirm="${_L('Убрать?')}">${_L('Убрать текущее')}</button><button class="btn danger" type="button" data-a="wo-cancel" data-confirm="${_L('Точно отменить?')}">${_L('Отменить тренировку')}</button></div>`; };
+MODALS.woSummary = function(m){
+  return `<div class="cele"><div class="cele-art">${ico('trophy')}</div><h2>${_L('Тренировка готова!')}</h2>
+  <div class="sum3"><div><b class="num">${fmtDur(m.dur)}</b><span>${_L('время')}</span></div><div><b class="num">${m.sets}</b><span>${_L('подходов')}</span></div><div class="xp"><b class="num">+${m.xp}</b><span>XP</span></div></div>
+  ${m.prs.length?`<div class="hud list sum-l">${m.prs.map(p=>`<div class="row"><span class="tag acc">${ico('trophy','sm')}</span><span class="main-t"><span class="ttl">${esc(_L(p.name))}</span><span class="sub"><span class="num">${esc(p.txt)}</span></span></span></div>`).join('')}</div>`:''}
+  ${m.recs&&m.recs.length?`<div class="sec-h small"><h2>${_L('В следующий раз')}</h2></div><div class="hud list sum-l">${m.recs.map(r=>`<div class="row"><span class="main-t"><span class="ttl">${esc(_L(r.name))}</span></span><span class="wv num">${esc(r.txt)}</span></div>`).join('')}</div>`:''}
+  <button class="btn go big" type="button" data-a="close">${_L('Дальше')}</button></div>`; };
+
+const _startWorkout13 = startWorkout;
+startWorkout = function(...a){ S.fx=null; S.woList=false; _startWorkout13(...a); };
+const _woSet13 = A['wo-set'];
+const A_seg13 = A.seg;
+
+/* ---------- «Прогресс» ---------- */
+function badgeCard(b){ const tr=D.tiers[b.id]||badgeTier(b,D.st), pct=tr.next?Math.round((tr.v-tr.prev)/(tr.next-tr.prev)*100):100;
+  return `<div class="bdg ${tr.k?'got':''}" style="--bc:${b.c}"><span class="bdg-i">${ico(b.i)}${tr.k?`<i class="num">${tr.k}</i>`:''}</span><b>${esc(_L(b.n))}</b><span class="pbar sm"><i style="width:${Math.max(0,Math.min(100,pct))}%"></i></span><small class="num">${tr.next?`${tr.v}/${tr.next}`:_L('максимум')}</small></div>`; }
+function vProgress14(){
+  const g=D.gs, lg=D.league||LEAGUES[0], nl=LEAGUES.find(x=>x.min>D.level), pct=Math.min(100,Math.round(g.tx/g.tg*100)), lp=Math.round(D.into/D.need*100), earned=BADGES.filter(b=>(D.tiers[b.id]||{}).k).length;
+  const XPH=[['tasks','Задача','+10'],['habits','Привычка','+5'],['pill','Приём','+2'],['gym','Тренировка','+50'],['trophy','Рекорд','+20'],['mood','Состояние','+3'],['food','Еда в норме','+10']];
+  return `<div class="hud strk"><div class="strk-top">${flameSvg(g.today,'flm big')}<div><b class="num">${g.s}</b><span>${plural(g.s,'день','дня','дней')} ${_L('подряд')}</span></div></div>${week7()}
+    <div class="strk-m">${g.today?`<span class="ok">${ico('check','sm')}${_L('Цель на сегодня выполнена')}</span>`:`<span>${_L('Ещё {0} XP — и день засчитан', g.tg-g.tx)}</span>`}<span class="num">${_L('рекорд {0}', g.best)}${g.fr?` · ${ico('snow','sm')}${g.fr}`:''}</span></div></div>
+  <div class="hud goal"><div class="goal-h"><b>${_L('Цель дня')}</b><span class="num">${g.tx} / ${g.tg} XP</span></div><div class="pbar xp"><i style="width:${pct}%"></i></div>${segHtml('goal', g.tg, GOALS.map(([v,l])=>[v, `${_L(l)}<small class="num">${v}</small>`]), 'full goal-seg')}</div>
+  <div class="hud lvl14">${gemSvg(lg.c,'gem big')}<div class="l-b"><div class="l-n">${_L('Лига «{0}»', esc(_L(lg.n)))}</div><h3>${_L('Уровень {0}', D.level)}</h3><div class="pbar"><i style="width:${lp}%"></i></div><div class="l-m num">${_L('{0} XP до {1} уровня', D.need-D.into, D.level+1)}${nl?' · '+_L('«{0}» с {1}', esc(_L(nl.n)), nl.min):''}</div></div></div>
+  <div class="sec-h"><h2>${_L('Как заработать XP')}</h2></div><div class="xp-how">${XPH.map(([i,l,v])=>`<span>${ico(i,'sm')}${_L(l)} <b class="num">${v}</b></span>`).join('')}</div>
+  <div class="sec-h"><h2>${_L('Значки')}</h2><span class="aside num">${earned}/${BADGES.length}</span></div><div class="bdg-grid">${BADGES.map(badgeCard).join('')}</div>
+  <div class="sec-h"><h2>${_L('Последние 14 дней')}</h2></div><div class="hud chart-card"><div class="chart" data-chart="plan14"></div></div>
+  <details class="more"><summary>${_L('Подробная статистика')}</summary>
+    ${weekCard(todayStr(), false)}
+    <div class="charts two"><div class="hud chart-card"><h3>${_L('Карта дисциплины')}</h3><div class="hm-wrap"><div class="chart" data-chart="heat"></div></div></div>
+    <div class="hud chart-card"><h3>${_L('Настроение')}</h3><div class="chart" data-chart="mood"></div></div><div class="hud chart-card"><h3>${_L('Сон')}</h3><div class="chart" data-chart="sleep"></div></div></div>
+    ${activeDays()>=GATE_DAYS?`<div class="hud insights" style="margin-top:12px">${insights()}</div>`:''}
+  </details>`;
+}
+VIEWS.progress = vProgress14;
+
+/* ---------- actions ---------- */
+Object.assign(A, {
+  'add-open'(){ if(S.lpUntil && Date.now()<S.lpUntil) return; openModal('quick'); },
+  'core-open'(){ if(S.lpUntil && Date.now()<S.lpUntil) return; openModal(sample && !S.aiOff ? 'core' : 'quick'); },
+  'gym-start'(el){ closeModal(true); if(S.draft){ go('gym'); return; } const id=el.dataset.id||''; if(id){ startWorkout(id); return; } startWorkout('', []); openModal('exLib'); },
+  'fab-gym'(){ closeModal(true); if(S.draft){ go('gym'); return; } const d=planDayFor(todayStr()); if(d){ startWorkout(d.id); return; } if(PLAN().days.length){ S.tab='gym'; render(true); openModal('gymChoose'); } else { S.tab='gym'; render(true); openModal('progWiz'); } },
+  'gym-choose'(){ openModal('gymChoose'); },
+  'prog-wiz'(){ openModal('progWiz'); },
+  'w-all'(){ S.wAll=!S.wAll; render(true); },
+  'wo-menu'(){ openModal('woMenu'); },
+  'wo-go'(el){ const w=S.draft; if(!w) return; const k=+el.dataset.e; if(!(k>=0 && k<w.exercises.length)) return; closeModal(true); soft(()=>{ S.fx=k; S.woList=false; }, k>=curFx()?'fwd':'back'); },
+  'wo-list'(){ closeModal(true); S.woList=!S.woList; render(true); window.scrollTo({top:0}); },
+  'wo-set'(el){ const w=S.draft; if(!w) return; const ei=+el.dataset.e, si=+el.dataset.s, ex=w.exercises[ei], s=ex&&ex.sets[si]; if(!s) return; const was=s.done;
+    if(!was){ const v=setView(ex, si); if(String(s.w).trim()==='') s.w=String(v.w); if(String(s.r).trim()==='') s.r=String(v.r); }
+    _woSet13(el);
+    if(!was && s.done && !S.woList){ buzz(18); S.fx=ei; if(ex.sets.every(x=>x.done)){ const nx=nextUndone(ei); if(nx>=0){ S.fx=nx; toast(_L('Дальше: {0}', esc(_L(w.exercises[nx].name)))); } } render(true); } },
+  seg(el){ A_seg13(el); const box=el.closest('[data-seg]'); if(box && box.dataset.seg==='goal'){ const v=+el.dataset.v; Store.merge('meta','profile',{goalHist:{[todayStr()]:v}}); render(true); } }
+});
+
 /* ================= boot ================= */
 function startLocal(){
   S.mode='local';
@@ -1995,8 +2275,8 @@ function init(){
   if(DARKQ){ const f=()=>{ if((S.previewTheme||curTheme())==='auto'){ themeFade(); renderChrome(); } }; if(DARKQ.addEventListener) DARKQ.addEventListener('change', f); else if(DARKQ.addListener) DARKQ.addListener(f); }
   const TABS={home:['home','Сегодня'], plan:['tasks','План'], body:['gym','Тело'], tasks:['tasks','Задачи'], habits:['habits','Привычки'], food:['food','Питание'], gym:['gym','Зал'], progress:['stats','Прогресс']};
   $$('.tab').forEach(b=>{ const t=TABS[b.dataset.tab]; if(!t) return; b.innerHTML=ico(t[0])+'<span>'+t[1]+'</span>'; });
-  $('#gear').innerHTML=ico('gear'); const mb=$('#minibar'); if(mb) mb.innerHTML='<span></span>'; const rc=$('#rail-cmd'); if(rc) rc.innerHTML=ico('spark','sm')+'<span>Команда</span>';
-  $('#lvl-chip').innerHTML='<span class="rk" id="lv-rk">E</span><span id="lv-t">УР 1</span><span class="bar"><i id="lv-bar"></i></span>';
+  $('#gear').innerHTML=ico('gear'); const mb=$('#minibar'); if(mb) mb.innerHTML='<span></span>'; const rc=$('#rail-cmd'); if(rc) rc.innerHTML=ico('plus','sm')+'<span>Добавить</span>';
+
   const h=(location.hash||'').slice(1); if(VIEWS[h]) S.tab=h;
   derive(); render(true);
   connect(); initAI();

@@ -1310,6 +1310,13 @@ details.more[open] > summary::after{content:''}
 }
 .topbar{gap:8px} .hello{flex:1 1 auto; overflow:hidden}
 .tb-right{flex:none}
+
+/* app feel: no stray text selection on taps, readable selection where text is meant to be copied */
+body{-webkit-user-select:none; user-select:none; -webkit-touch-callout:none}
+input,textarea,select,[contenteditable],.msg .body,.tech,.calc,.ins,.sheet-log{-webkit-user-select:text; user-select:text}
+::selection{background:rgba(var(--acc-rgb),.28) !important; color:inherit}
+.tab:focus-visible,.btn:focus-visible,.chk:focus-visible,.icon-btn:focus-visible,.gchip:focus-visible,.lvl-chip:focus-visible{outline:2px solid var(--acc); outline-offset:2px; border-radius:16px}
+:focus:not(:focus-visible){outline:none}
 </style>
 
 <div class="minibar" id="minibar" aria-hidden="true"></div>
